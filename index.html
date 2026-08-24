@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>מלך הפריימריז</title>
+<meta name="description" content="משחק מלך הפריימריז: הגש מנות חמות בסניף לפני שהמצביעים מתעצבנים">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link href="https://fonts.googleapis.com/css2?family=Suez+One&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+  @font-face{
+    font-family:'Likkud';
+    src:url('assets/LikkudUB.otf') format('opentype');
+    font-display:swap;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{margin:0;padding:0;background:#181818;height:100%;overflow:hidden;font-family:'Secular One',sans-serif;}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #stage{position:relative;width:650px;height:490px;background:#66CCFF;border:6px solid #0d0d0d;border-radius:6px;overflow:hidden;transform-origin:center;}
+  .scr{position:absolute;inset:0;display:none;}
+  .scr.on{display:block;}
+  svg{display:block;}
+  svg text{pointer-events:none;}
+
+  /* ---------- TITLE ---------- */
+  #titleScreen{background:#08286a;}
+  #titleSvg{position:absolute;inset:0;}
+  .menuBtn{
+    display:block;width:300px;margin:14px auto 0;padding:13px 0;text-align:center;
+    background:linear-gradient(#ffe488,#e8b62c 55%,#c8901a);
+    color:#08286a;font-family:'Likkud','Suez One',serif;font-size:29px;
+    border:3px solid #08286a;border-radius:6px;
+    cursor:pointer;box-shadow:0 5px 0 #8a6410, 0 0 0 3px #ffe488;
+    position:relative;z-index:5;letter-spacing:.5px;
+  }
+  .menuBtn:active{transform:translateY(4px);box-shadow:0 1px 0 #8a6410, 0 0 0 3px #ffe488;}
+  .menuBtn.alt{
+    background:transparent;color:#ffe488;font-size:20px;width:230px;padding:8px 0;
+    border:3px solid #ffe488;box-shadow:none;
+  }
+  .menuBtn.alt:active{transform:translateY(3px);box-shadow:none;}
+  #titleMenu{position:absolute;bottom:56px;left:0;right:0;z-index:5;}
+
+  /* ---------- HOWTO ---------- */
+  #howtoScreen{background:#EFE3C0;padding:22px 34px;}
+  #howtoScreen h2{font-family:'Suez One',serif;color:#7a4a1d;font-size:32px;margin:2px 0 10px;text-align:center;}
+  #howtoScreen ul{margin:0;padding:0 18px 0 0;font-size:16px;line-height:1.55;color:#222;}
+  #howtoScreen li b{color:#b32d00;}
+
+  /* ---------- GAME ---------- */
+  #gameScreen{background:#8a9296;}
+  #gameSvg{position:absolute;inset:0;width:650px;height:490px;}
+  .clickable{cursor:pointer;}
+  .cust{transition:transform .55s ease, opacity .45s ease;}
+  .cust .body{transition:none;}
+  .browL,.browR{transform-box:fill-box;transform-origin:center;transition:transform .3s;}
+  .pulseBtn{transform-box:fill-box;transform-origin:center;animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.13);}}
+  .flyG{transform-box:fill-box;transform-origin:center;animation:buzz .3s infinite alternate;}
+  @keyframes buzz{from{transform:translate(0,0) rotate(-9deg);}to{transform:translate(4px,-4px) rotate(9deg);}}
+  .arrowBob{transform-box:fill-box;transform-origin:center;animation:bob .7s infinite alternate;}
+  @keyframes bob{from{transform:translateY(0);}to{transform:translateY(10px);}}
+  .steam{transform-box:fill-box;transform-origin:center;animation:steamUp 2.4s linear infinite;}
+  @keyframes steamUp{0%{transform:translateY(0);opacity:.75;}100%{transform:translateY(-26px);opacity:0;}}
+
+  #toast{
+    position:absolute;top:96px;left:50%;transform:translateX(-50%);background:#111;color:#fff;
+    padding:6px 18px;border-radius:20px;font-size:17px;z-index:60;display:none;white-space:nowrap;
+  }
+  #toast.on{display:block;}
+  #pauseOverlay{
+    position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:55;display:none;
+    align-items:center;justify-content:center;color:#fff;font-family:'Suez One',serif;font-size:52px;
+  }
+  #pauseOverlay.on{display:flex;}
+
+  /* ---------- GAME OVER ---------- */
+  #overScreen{background:rgba(15,8,4,.9);z-index:80;}
+  #overCard{
+    position:absolute;top:60px;left:50%;transform:translateX(-50%);width:440px;background:#f4f0dd;
+    border:5px solid #222;border-radius:8px;padding:24px;text-align:center;box-shadow:8px 10px 0 rgba(0,0,0,.45);
+  }
+  #overCard h2{font-family:'Suez One',serif;font-size:38px;color:#b32d00;margin:0 0 6px;}
+  #overCard .big{font-family:'Suez One',serif;font-size:56px;color:#111;margin:4px 0;}
+  #overCard p{font-size:17px;color:#333;margin:6px 0;}
+</style>
+</head>
+<body>
+<div id="wrap">
+<div id="stage">
+
+  <!-- ================= TITLE ================= -->
+  <div class="scr on" id="titleScreen">
+    <svg id="titleSvg" viewBox="0 0 650 490">
+      <defs>
+        <linearGradient id="t-blue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0b3a86"/><stop offset=".55" stop-color="#08286a"/><stop offset="1" stop-color="#051c4e"/>
+        </linearGradient>
+        <linearGradient id="t-gold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffe488"/><stop offset=".5" stop-color="#e8b62c"/><stop offset="1" stop-color="#b8860b"/>
+        </linearGradient>
+        <radialGradient id="t-glow" cx=".5" cy=".42" r=".62">
+          <stop offset="0" stop-color="#1a5fc4" stop-opacity=".95"/>
+          <stop offset="1" stop-color="#08286a" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <rect width="650" height="490" fill="url(#t-blue)"/>
+      <rect width="650" height="490" fill="url(#t-glow)"/>
+
+      <!-- קרני זרקור -->
+      <g opacity=".13" fill="#ffffff">
+        <path d="M325 210 L60 -40 L170 -40 Z"/>
+        <path d="M325 210 L250 -40 L330 -40 Z"/>
+        <path d="M325 210 L420 -40 L500 -40 Z"/>
+        <path d="M325 210 L600 -40 L680 -40 Z"/>
+      </g>
+
+      <!-- פס עליון -->
+      <rect x="0" y="0" width="650" height="9" fill="url(#t-gold)"/>
+
+      <!-- כותרת -->
+      <text x="325" y="150" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
+            font-size="96" fill="#ffffff" letter-spacing="1">מלך הפריימריז</text>
+      <text x="325" y="150" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
+            font-size="96" fill="none" stroke="url(#t-gold)" stroke-width="2.4" letter-spacing="1">מלך הפריימריז</text>
+
+      <!-- קו זהב מפריד -->
+      <g>
+        <rect x="150" y="176" width="350" height="4" fill="url(#t-gold)"/>
+        <path d="M325 166 l13 12 l-13 12 l-13 -12 Z" fill="url(#t-gold)"/>
+      </g>
+
+      <!-- סלוגן -->
+      <text x="325" y="222" text-anchor="middle" font-family="Likkud, 'Secular One', sans-serif"
+            font-size="30" fill="#ffe488">רק אנחנו. רק ניצחון. רק אוכל חם</text>
+      <text x="325" y="256" text-anchor="middle" font-family="Secular One, sans-serif"
+            font-size="18" fill="#b9cdf0">מנהלים את בית התמחוי של הסניף. התור ארוך והמצלמות דולקות</text>
+
+      <text id="hsText" x="325" y="296" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
+            font-size="24" fill="#ffe488"></text>
+
+      <!-- פס תחתון -->
+      <rect x="0" y="481" width="650" height="9" fill="url(#t-gold)"/>
+      <text x="325" y="470" text-anchor="middle" font-family="Secular One, sans-serif"
+            font-size="12" fill="#7f9ccb">מחווה לקלאסיקות הפלאש הישראליות של שנות ה-2000</text>
+    </svg>
+    <div id="titleMenu">
+      <div class="menuBtn" id="btnStart">יוצאים לקמפיין</div>
+      <div class="menuBtn alt" id="btnHow">איך משחקים?</div>
+    </div>
+  </div>
+
+  <!-- ================= HOWTO ================= -->
+  <div class="scr" id="howtoScreen">
+    <h2>איך משחקים?</h2>
+    <ul>
+      <li>האורח הראשון בתור (עם <b>החץ הצהוב</b>) מזמין. <b>הדגלונים על הדלפק</b> מראים כמה נשאר להוסיף מכל דבר.</li>
+      <li>קח צלחת מ<b>ערימת הצלחות</b>, לחץ על המגשים כדי למלא, וכשהכול על 0 לחץ על האורח והגש.</li>
+      <li>זהירות: מנה שלא הוזמנה הורסת את הצלחת. אורח שמקבל צלחת שגויה זורק אותה, והסבלנות שלו קופצת.</li>
+      <li>המגשים מתרוקנים. לחץ על <b>דלת המטבח</b> ושמעון ימלא אותם.</li>
+      <li>נחת <b>זבוב</b> על מגש? הוא נעול עד שתרסס עם הספריי הכחול.</li>
+      <li>לכל אורח יש <b>מד סבלנות</b>. מד שמתמלא עד הסוף = המשמרת נגמרת.</li>
+      <li>כל 100 נקודות נטען <b>כפתור המוזיקה</b>. להיט אחד טוב מרגיע את כל התור.</li>
+      <li>כפתור <b>ההשהיה</b> למעלה עוצר את המשחק.</li>
+    </ul>
+    <div class="menuBtn" id="btnBack" style="margin-top:12px;">חזרה</div>
+  </div>
+
+  <!-- ================= GAME ================= -->
+  <div class="scr" id="gameScreen">
+    <svg id="gameSvg" viewBox="0 0 1000 750"></svg>
+    <div id="toast"></div>
+    <div id="pauseOverlay">הפסקה</div>
+  </div>
+
+  <!-- ================= GAME OVER ================= -->
+  <div class="scr" id="overScreen">
+    <div id="overCard">
+      <h2 id="overTitle">המשמרת נגמרה!</h2>
+      <p id="overReason"></p>
+      <div class="big" id="overScore">0</div>
+      <p id="overMeals"></p>
+      <div class="menuBtn" id="btnAgain">עוד משמרת</div>
+      <div class="menuBtn alt" id="btnHome">למסך הפתיחה</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================
+   מלך בית התמחוי — מחווה מקורית בסגנון משחקי פלאש 2001.
+   כל הגרפיקה מצוירת בקוד (SVG). אין נכסים חיצוניים.
+   ===================================================== */
+
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const SVGNS = "http://www.w3.org/2000/svg";
+
+function fitStage(){
+  const s = Math.min(window.innerWidth/662, window.innerHeight/502, 1.5);
+  $("#stage").style.transform = `scale(${s})`;
+}
+window.addEventListener("resize", fitStage); fitStage();
+
+/* ---------- synth sounds ---------- */
+let AC=null;
+let SFX_ON=true;   /* אפקטים */
+let BGM_ON=true;   /* מוזיקת רקע מהקובץ. כפתור הרמקול מכבה הכול. */
+function beep(f,d=0.09,t="square",v=0.12){
+  if(!SFX_ON) return;
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=t;o.frequency.value=f;
+    g.gain.setValueAtTime(v,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+d);
+    o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d);
+  }catch(e){}
+}
+const sndTake =()=>beep(520,.06);
+const sndAdd  =()=>beep(720,.05);
+const sndServe=()=>{beep(660,.08);setTimeout(()=>beep(880,.1),80);setTimeout(()=>beep(1100,.14),170);};
+const sndBad  =()=>beep(180,.18,"sawtooth");
+const sndSpray=()=>{beep(1400,.04,"triangle");setTimeout(()=>beep(1200,.04,"triangle"),50);};
+const sndMusic=()=>[523,659,784,659,523,784,880,1046].forEach((f,i)=>setTimeout(()=>beep(f,.16,"triangle",.15),i*140));
+const sndOver =()=>[400,340,280,200].forEach((f,i)=>setTimeout(()=>beep(f,.25,"sawtooth"),i*220));
+
+/* ---------- foods ---------- */
+const FOODS = {
+  soup:{name:"מרק"}, rice:{name:"אורז"}, patty:{name:"קציצות"}, salad:{name:"סלט"}
+};
+const FKEYS = Object.keys(FOODS);
+
+/* =====================================================
+   ART — קריקטורות בסגנון פלאש: קווי מתאר עבים, הצללות
+   ===================================================== */
+
+/* ---- shared defs ---- */
+const DEFS = `
+<defs>
+  <linearGradient id="g-sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8ed4ff"/><stop offset="1" stop-color="#cfeeff"/>
+  </linearGradient>
+  <linearGradient id="g-meter" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#3f9b1e"/><stop offset=".55" stop-color="#6f9b1e"/>
+    <stop offset=".8" stop-color="#7a5a10"/><stop offset="1" stop-color="#4a2c08"/>
+  </linearGradient>
+  <linearGradient id="g-steel" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#dfe6ea"/><stop offset=".5" stop-color="#a9b4bb"/><stop offset="1" stop-color="#7c868d"/>
+  </linearGradient>
+  <linearGradient id="g-counter" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#b0b9be"/><stop offset="1" stop-color="#899298"/>
+  </linearGradient>
+  <linearGradient id="g-soup" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f0a044"/><stop offset="1" stop-color="#d97b28"/>
+  </linearGradient>
+  <radialGradient id="g-skin1" cx=".4" cy=".35" r=".9">
+    <stop offset="0" stop-color="#f4c99a"/><stop offset="1" stop-color="#d09a62"/>
+  </radialGradient>
+  <radialGradient id="g-skin2" cx=".4" cy=".35" r=".9">
+    <stop offset="0" stop-color="#f6d5ae"/><stop offset="1" stop-color="#d8a878"/>
+  </radialGradient>
+  <radialGradient id="g-skin3" cx=".4" cy=".35" r=".9">
+    <stop offset="0" stop-color="#e6b07c"/><stop offset="1" stop-color="#c08a4e"/>
+  </radialGradient>
+  <linearGradient id="g-cash" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f2d24b"/><stop offset="1" stop-color="#cfa616"/>
+  </linearGradient>
+</defs>`;
+
+/* =====================================================
+   ASSETS — תמונות חיצוניות (אופציונלי)
+   שמים קבצים בתיקיית assets/ והמשחק משתמש בהם אוטומטית.
+   בלי קבצים — נשארת הגרפיקה המצוירת בקוד.
+
+   bg.png                    רקע מלא 1000x750, בלי אנשים,
+                             קו הדלפק אופקי בערך בגובה 500 (שני שליש)
+   char1-neutral.png         סבא יוסף רגוע   (שקוף, חזה ומעלה, ~600x900)
+   char1-angry.png           סבא יוסף עצבני
+   char1-happy.png           סבא יוסף שמח
+   char2-*  סבתא רבקה   char3-*  מוטי
+   char4-*  שירה         char5-*  אברם
+   ===================================================== */
+let COUNTER_Y = 386; /* קו הדלפק ברקע. מזוהה אוטומטית מהתמונה בזמן טעינה. */
+const MAX_CHARS = 8;
+/* אפשרות ב': רצועה לכל דמות char{n}-strip.png — 3 תאים (רגוע/עצבני/שמח), רקע שקוף.
+   אפשרות ג': גיליון chars-sheet.png — 3 עמודות, שורה לכל דמות, רקע לבן (מוסר אוטומטית).
+   שמות הדמויות לפי הסדר: */
+const CHAR_NAMES = ["שלמה","יעקב","מוטי","סבא יוסף","אברם","ורד","דליה","נסים"];
+const ASSETS = { loaded:{}, url:{}, charURL:{}, charFit:{}, checked:false };
+/* גובה הגוף הרצוי במשחק. כל דמות מוקטנת או מוגדלת אליו,
+   כך שכולן יוצאות באותו גודל גם אם ציירת אותן אחרת. */
+const CHAR_TARGET_H = 300;
+const CHAR_SINK = 34; /* כמה התחתית נכנסת מתחת לקו הדלפק */
+/* עוקף קאש: כל רענון מושך את הקבצים מחדש, שתמונה חדשה תיכנס מיד */
+const CB = "?t=" + Date.now();
+const A = name => "assets/" + name + CB;
+/* מקבל כל סיומת נפוצה: png / jpg / jpeg / webp. ASSETS.url שומר את מה שנמצא */
+const EXTS = [".png",".jpg",".jpeg",".webp"];
+function tryLoad(src){
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>res(true); im.onerror = ()=>res(false);
+    im.src = src;
+  });
+}
+async function resolveAsset(base){
+  for(const e of EXTS){
+    const src = A(base + e);
+    if(await tryLoad(src)){ ASSETS.url[base] = src; return src; }
+  }
+  return null;
+}
+let METER_Y = -44, ARROW_DY = 0, BUBBLE_Y = -46, METER_CX = 130;
+let CHAR_BOX = { x:-85, w:430, h:480 };
+function loadImg(name){
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>{ ASSETS.loaded[name]=true; res(true); };
+    im.onerror = ()=>res(false);
+    im.src = A(name);
+  });
+}
+/* מסיר רקע אטום בכל צבע: מציף מהשוליים ומוחק כל מה שדומה לצבע הפינות.
+   מציל תמונות שנוצרו בלי שקיפות אמיתית. */
+function removeEdgeBG(cv, tol){
+  tol = tol || 42;
+  const ctx = cv.getContext("2d");
+  const w = cv.width, h = cv.height;
+  const d = ctx.getImageData(0,0,w,h);
+  const px = d.data;
+  /* צבע הרקע = ממוצע ארבע הפינות */
+  const corners = [0, (w-1), (h-1)*w, h*w-1];
+  let r=0,g=0,b=0;
+  corners.forEach(i=>{ r+=px[i*4]; g+=px[i*4+1]; b+=px[i*4+2]; });
+  r/=4; g/=4; b/=4;
+  /* הרקע לרוב מדרג ולא צבע אחד, לכן משווים לשכן ולא לצבע קבוע.
+     קווי המתאר השחורים של הדמות עוצרים את ההצפה. */
+  const LOCAL = 20;   /* צעד בין שכנים: מאפשר מדרג עדין */
+  const GLOBAL = 72;  /* רחוק מדי מצבע הפינה? עוצרים. מגן על הדמות */
+  const seen = new Uint8Array(w*h), stack = [];
+  const fromSeed = i => Math.max(Math.abs(px[i*4]-r), Math.abs(px[i*4+1]-g), Math.abs(px[i*4+2]-b));
+  for(let x=0;x<w;x++){ if(fromSeed(x)<GLOBAL) stack.push(x); const q=(h-1)*w+x; if(fromSeed(q)<GLOBAL) stack.push(q); }
+  for(let y=0;y<h;y++){ const a=y*w, bb=y*w+w-1; if(fromSeed(a)<GLOBAL) stack.push(a); if(fromSeed(bb)<GLOBAL) stack.push(bb); }
+  const close = (p,q) => Math.abs(px[p*4]-px[q*4])<LOCAL && Math.abs(px[p*4+1]-px[q*4+1])<LOCAL && Math.abs(px[p*4+2]-px[q*4+2])<LOCAL;
+  while(stack.length){
+    const p = stack.pop();
+    if(seen[p]) continue;
+    seen[p]=1;
+    const x=p%w, y=(p-x)/w;
+    const push = q => { if(!seen[q] && fromSeed(q)<GLOBAL && close(p,q)) stack.push(q); };
+    if(x>0) push(p-1);
+    if(x<w-1) push(p+1);
+    if(y>0) push(p-w);
+    if(y<h-1) push(p+w);
+  }
+  /* אם נמחק יותר מדי, זה כבר לא רקע. מבטלים ומשאירים כמו שהיה. */
+  let cleared=0; for(let i=0;i<w*h;i++) if(seen[i]) cleared++;
+  if(cleared > w*h*0.82) return;
+  for(let i=0;i<w*h;i++) if(seen[i]) px[i*4+3]=0;
+  ctx.putImageData(d,0,0);
+}
+
+/* מסיר רקע לבן מקנבס: מציף מהשוליים פנימה */
+function whiteToAlpha(cv){
+  const ctx = cv.getContext("2d");
+  const w = cv.width, h = cv.height;
+  const d = ctx.getImageData(0,0,w,h);
+  const px = d.data, seen = new Uint8Array(w*h), stack = [];
+  const isWhite = i => px[i*4]>228 && px[i*4+1]>228 && px[i*4+2]>228;
+  for(let x=0;x<w;x++){ stack.push(x, (h-1)*w+x); }
+  for(let y=0;y<h;y++){ stack.push(y*w, y*w+w-1); }
+  while(stack.length){
+    const p = stack.pop();
+    if(seen[p] || !isWhite(p)) continue;
+    seen[p] = 1; px[p*4+3] = 0;
+    const x = p%w, y = (p-x)/w;
+    if(x>0) stack.push(p-1);
+    if(x<w-1) stack.push(p+1);
+    if(y>0) stack.push(p-w);
+    if(y<h-1) stack.push(p+w);
+  }
+  ctx.putImageData(d,0,0);
+}
+
+/* מסיר "כרטיס" אטום שמאחורי דמות: שוליים שקופים אבל מלבן רקע בפנים.
+   דוגם את טבעת השוליים של התוכן; אם היא אחידה ואטומה, זה רקע ולא ציור. */
+function removeCardBG(cv){
+  const b0 = contentBox(cv); if(!b0) return;
+  const ctx = cv.getContext("2d");
+  const w = cv.width, h = cv.height;
+  const d = ctx.getImageData(0,0,w,h);
+  const px = d.data;
+  const inset = 3;
+  const x0=b0.x+inset, x1=b0.x+b0.w-1-inset, y0=b0.y+inset, y1=b0.y+b0.h-1-inset;
+  if(x1-x0<20 || y1-y0<20) return;
+  /* דוגמים רק למעלה ובצדדים. למטה הדמות חתוכה וחוצה את הקצה תמיד. */
+  const samples=[];
+  const sx=Math.max(4,((x1-x0)/24)|0), sy=Math.max(4,((y1-y0)/24)|0);
+  for(let x=x0;x<=x1;x+=sx){ samples.push(y0*w+x); }
+  for(let y=y0;y<=y1;y+=sy){ samples.push(y*w+x0, y*w+x1); }
+  const opq = samples.filter(i=>px[i*4+3]>200);
+  if(opq.length < samples.length*0.6) return;      /* הקצוות לא אטומים: אין כרטיס */
+  let r=0,g=0,bl=0;
+  opq.forEach(i=>{ r+=px[i*4]; g+=px[i*4+1]; bl+=px[i*4+2]; });
+  r/=opq.length; g/=opq.length; bl/=opq.length;
+  const uniform = opq.filter(i=>Math.abs(px[i*4]-r)<50 && Math.abs(px[i*4+1]-g)<50 && Math.abs(px[i*4+2]-bl)<50);
+  if(uniform.length < opq.length*0.75) return;     /* הקצוות צבעוניים: זה ציור, לא רקע */
+  const GLOBAL=66, LOCAL=18;
+  const fromSeed = i => Math.max(Math.abs(px[i*4]-r), Math.abs(px[i*4+1]-g), Math.abs(px[i*4+2]-bl));
+  const seen = new Uint8Array(w*h), stack = [];
+  uniform.forEach(i=>{ if(fromSeed(i)<GLOBAL) stack.push(i); });
+  const close = (p,q) => Math.abs(px[p*4]-px[q*4])<LOCAL && Math.abs(px[p*4+1]-px[q*4+1])<LOCAL && Math.abs(px[p*4+2]-px[q*4+2])<LOCAL;
+  while(stack.length){
+    const p = stack.pop();
+    if(seen[p]) continue;
+    seen[p]=1;
+    const x=p%w, y=(p-x)/w;
+    const push = q => { if(!seen[q] && px[q*4+3]>0 && fromSeed(q)<GLOBAL && close(p,q)) stack.push(q); };
+    if(x>0) push(p-1);
+    if(x<w-1) push(p+1);
+    if(y>0) push(p-w);
+    if(y<h-1) push(p+w);
+  }
+  let cleared=0; for(let i=0;i<w*h;i++) if(seen[i]) cleared++;
+  /* דמות חזה תופסת הרבה פחות מ-94% מהתא, אז מחיקה גדולה מזה = תקלה */
+  if(cleared > w*h*0.94) return;
+  for(let i=0;i<w*h;i++) if(seen[i]) px[i*4+3]=0;
+  ctx.putImageData(d,0,0);
+}
+
+/* גבולות התוכן האטום בקנבס */
+function contentBox(cv){
+  const ctx = cv.getContext("2d");
+  const w = cv.width, h = cv.height;
+  const px = ctx.getImageData(0,0,w,h).data;
+  let minX=w, minY=h, maxX=-1, maxY=-1;
+  const STEP = 2; /* דגימה מדלגת: מהיר, מדויק מספיק */
+  for(let y=0;y<h;y+=STEP){
+    for(let x=0;x<w;x+=STEP){
+      if(px[((y*w)+x)*4+3] > 40){
+        if(x<minX) minX=x; if(x>maxX) maxX=x;
+        if(y<minY) minY=y; if(y>maxY) maxY=y;
+      }
+    }
+  }
+  if(maxX<0) return null;
+  return {x:Math.max(0,minX-STEP), y:Math.max(0,minY-STEP),
+          w:Math.min(w,maxX+STEP)-Math.max(0,minX-STEP)+1,
+          h:Math.min(h,maxY+STEP)-Math.max(0,minY-STEP)+1};
+}
+
+async function loadStrip(n){
+  const src = await resolveAsset(`char${n}-strip`);
+  if(!src) return;
+  const im = new Image();
+  await new Promise((res,rej)=>{ im.onload=res; im.onerror=rej; im.src=src; });
+  const cw = im.width/3, ch = im.height;
+  const states = ["neutral","angry","happy"];
+  /* שלב א': חותכים לשלושה ומנקים רקע */
+  const cells = states.map((s,c)=>{
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(cw); cv.height = Math.round(ch);
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(im, c*cw, 0, cw, ch, 0, 0, cv.width, cv.height);
+    try{
+      let d = ctx.getImageData(0,0,cv.width,cv.height);
+      /* רקע אטום עד הקצה? מסירים לפי צבע הפינות */
+      if(d.data[3] > 200) { removeEdgeBG(cv); d = ctx.getImageData(0,0,cv.width,cv.height); }
+      /* ניקוי רעלה חצי-שקופה שנשארת מייצוא AI */
+      const px = d.data;
+      for(let i=3;i<px.length;i+=4){ if(px[i]<70) px[i]=0; }
+      ctx.putImageData(d,0,0);
+      /* כרטיס אטום מאחורי הדמות, עם שוליים שקופים? מסירים גם אותו */
+      removeCardBG(cv);
+    }catch(e){}
+    return cv;
+  });
+  /* שלב ב': מסגרת משותפת לשלוש ההבעות, שהדמות לא תקפוץ ביניהן.
+     שומרים את התמונות כמו שהן, ורק מודדים איפה הגוף מתחיל ונגמר.
+     המדידה היא מה שמאפשר לתת לכל הדמויות אותו גודל אמיתי,
+     ולהצמיד את תחתית הגוף מתחת לדלפק כדי שקצה החיתוך ייבלע. */
+  let box = null;
+  cells.forEach(cv=>{
+    const b = contentBox(cv); if(!b) return;
+    box = box ? {
+      x: Math.min(box.x, b.x), y: Math.min(box.y, b.y),
+      r: Math.max(box.r, b.x+b.w), bt: Math.max(box.bt, b.y+b.h)
+    } : {x:b.x, y:b.y, r:b.x+b.w, bt:b.y+b.h};
+  });
+  cells.forEach((cv,i)=>{
+    ASSETS.charURL[`${n}-${states[i]}`] = cv.toDataURL("image/png");
+  });
+  if(box){
+    ASSETS.charFit[n] = {
+      cw: Math.round(cw), ch: Math.round(ch),
+      cx: (box.x + box.r)/2 / cw,        /* מרכז הגוף, כשבר מרוחב התא */
+      top: box.y / ch,                    /* ראש */
+      bottom: box.bt / ch,                /* תחתית הגוף */
+      hFrac: (box.bt - box.y) / ch        /* גובה הגוף כשבר */
+    };
+  }
+}
+
+async function loadSheet(){
+  const src = await resolveAsset("chars-sheet");
+  if(!src) return;
+  const im = new Image();
+  await new Promise((res,rej)=>{ im.onload=res; im.onerror=rej; im.src=src; });
+  const cellW = im.width/3;
+  const rows = Math.max(1, Math.round(im.height/cellW));
+  const cellH = im.height/rows;
+  const states = ["neutral","angry","happy"];
+  for(let r=0;r<rows && r<5;r++){
+    for(let c=0;c<3;c++){
+      const cv = document.createElement("canvas");
+      cv.width = Math.round(cellW); cv.height = Math.round(cellH);
+      cv.getContext("2d").drawImage(im, c*cellW, r*cellH, cellW, cellH, 0, 0, cv.width, cv.height);
+      try{ whiteToAlpha(cv); }catch(e){}
+      ASSETS.charURL[`${r+1}-${states[c]}`] = cv.toDataURL("image/png");
+    }
+  }
+}
+
+/* איפה יש תמונה לדמות idx במצב state? מחזיר href או null */
+function charHref(idx,state){
+  if(ASSETS.charURL[`${idx}-${state}`]) return ASSETS.charURL[`${idx}-${state}`];
+  if(ASSETS.url[`char${idx}-${state}`]) return ASSETS.url[`char${idx}-${state}`];
+  return null;
+}
+function charHrefSafe(idx,state){
+  return charHref(idx,state) || charHref(idx,"neutral");
+}
+
+/* מיקום וגודל של דמות: אותו גובה גוף לכולן, תחתית מתחת לדלפק.
+   מוחזר כמחרוזת אטריביוטים ל-image. */
+function charPlacement(idx){
+  const f = ASSETS.charFit[idx];
+  if(!f) return `x="${CHAR_BOX.x}" y="0" width="${CHAR_BOX.w}" height="${CHAR_BOX.h}" preserveAspectRatio="xMidYMax meet"`;
+  const scale = CHAR_TARGET_H / (f.hFrac * f.ch);   /* גובה גוף אחיד */
+  const w = f.cw * scale, h = f.ch * scale;
+  /* תחתית הגוף יורדת אל מתחת לקו הדלפק */
+  const y = (COUNTER_Y + CHAR_SINK) - f.bottom * h - QY;
+  /* מרכז הגוף מתיישר למרכז המשבצת */
+  const x = (CHAR_BOX.w/2) - f.cx * w;
+  return `x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="none"`;
+}
+
+/* מזהה את קו הדלפק ברקע: הקצה האופקי החזק ביותר ברצועת הגובה הסבירה,
+   נמדד בכמה עמודות ולוקחים חציון. מחזיר גובה בקואורדינטות 750. */
+async function detectCounterY(src){
+  try{
+    const im = new Image();
+    await new Promise((res,rej)=>{ im.onload=res; im.onerror=rej; im.src=src; });
+    const cv = document.createElement("canvas");
+    cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(im,0,0);
+    const d = ctx.getImageData(0,0,cv.width,cv.height).data;
+    const results = [];
+    for(const fx of [0.22, 0.38, 0.5, 0.62, 0.78]){
+      const col = Math.round(cv.width*fx);
+      let best = null;
+      for(let y=Math.round(cv.height*0.42); y<cv.height*0.70; y++){
+        const i=((y*cv.width)+col)*4, j=(((y+3)*cv.width)+col)*4;
+        const diff=Math.abs(d[i]-d[j])+Math.abs(d[i+1]-d[j+1])+Math.abs(d[i+2]-d[j+2]);
+        if(!best || diff>best.diff) best={y, diff};
+      }
+      if(best && best.diff>80) results.push(best.y);
+    }
+    if(results.length<3) return null;
+    results.sort((a,b)=>a-b);
+    const median = results[Math.floor(results.length/2)];
+    return Math.round(median/cv.height*750);
+  }catch(e){ return null; }
+}
+
+async function checkAssets(){
+  if(ASSETS.checked) return;
+  /* בזה אחר זה. הצפה של עשרות בקשות במקביל מפילה חלק מהתמונות. */
+  await resolveAsset("bg");
+  if(ASSETS.url["bg"]){
+    const cy = await detectCounterY(ASSETS.url["bg"]);
+    if(cy && cy>300 && cy<560) ASSETS.counterY = cy;
+  }
+  await loadSheet();
+  for(let i=1;i<=MAX_CHARS;i++){
+    await loadStrip(i);
+    /* רק אם אין רצועה, מחפשים קבצים נפרדים להבעות */
+    if(!ASSETS.charURL[`${i}-neutral`]){
+      for(const s of ["neutral","angry","happy"]) await resolveAsset(`char${i}-${s}`);
+    }
+  }
+  ASSETS.checked = true;
+}
+function applyAssets(){
+  const svg = $("#gameSvg");
+  if(!svg || !svg.querySelector("#queueG")) return;
+  if(ASSETS.counterY) COUNTER_Y = ASSETS.counterY;
+  if(ASSETS.url["bg"] && !svg.querySelector(".assetBg")){
+    /* שכבת רקע מאחורי הדמויות */
+    const back = document.createElementNS(SVGNS,"image");
+    back.setAttribute("class","assetBg");
+    back.setAttribute("href",ASSETS.url["bg"]);
+    back.setAttribute("x",0); back.setAttribute("y",0);
+    back.setAttribute("width",1000); back.setAttribute("height",750);
+    back.setAttribute("preserveAspectRatio","xMidYMid slice");
+    svg.insertBefore(back, svg.querySelector("#queueG"));
+    /* אותו רקע, רק אזור הדלפק, מעל הדמויות */
+    const defs = svg.querySelector("defs");
+    defs.innerHTML += `<clipPath id="counterClip"><rect x="0" y="${COUNTER_Y}" width="1000" height="${750-COUNTER_Y}"/></clipPath>`;
+    const frontG = document.createElementNS(SVGNS,"g");
+    frontG.setAttribute("class","assetBg");
+    frontG.setAttribute("clip-path","url(#counterClip)");
+    frontG.innerHTML = `<image href="${ASSETS.url["bg"]}" x="0" y="0" width="1000" height="750" preserveAspectRatio="xMidYMid slice"/>`;
+    const firstTray = svg.querySelector("#tray-soup");
+    firstTray.parentNode.insertBefore(frontG, firstTray);
+    /* מכבים את הציור הקודי — חוץ מהספריי, שאין לו מקבילה ברקע */
+    svg.querySelectorAll(".paint").forEach(e=>{ if(!e.closest("#sprayG")) e.style.display="none"; });
+    svg.querySelectorAll(".wpaint").forEach(e=>e.style.display="none");
+    /* מיקומים מכוונים ל-bg.png: סיר, אורז, קציצות, סלט, צלחות; דלת מטבח מימין */
+    const POS = { soup:[124,455], rice:[331,500], patty:[549,500], salad:[737,500] };
+    FKEYS.forEach(k=>{
+      const t = svg.querySelector(`#tray-${k}`);
+      if(t) t.setAttribute("transform",`translate(${POS[k][0]} ${POS[k][1]})`);
+    });
+    const plates = svg.querySelector("#platesG");
+    if(plates) plates.setAttribute("transform","translate(840 455)");
+    /* שמעון גר עכשיו מאחורי דלת המטבח מימין */
+    const worker = svg.querySelector("#workerG");
+    if(worker){
+      worker.setAttribute("transform","translate(800 92)");
+      const hit = worker.querySelector(".hit");
+      if(hit){ hit.setAttribute("width","82"); hit.setAttribute("height","300"); }
+    }
+    const spray = svg.querySelector("#sprayG");
+    if(spray) spray.setAttribute("transform","translate(778 462)");
+    /* קומפוזיציה כמו במקור: הדלפק חותך בחזה, בלי זום מוגזם */
+    QX = [556, 348, 140]; QY = 40;
+    CHAR_BOX = { x:0, w:272, h:390 };
+    METER_Y = -28; ARROW_DY = 62; BUBBLE_Y = -34; METER_CX = 206;
+    /* טלאים בעברית על הפוסטרים האנגליים שברקע */
+    if(!svg.querySelector(".hebPatches")){
+      const patches = document.createElementNS(SVGNS,"g");
+      patches.setAttribute("class","assetBg hebPatches");
+      /* טקסט עברי על השלטים הריקים שברקע */
+      patches.innerHTML = `
+        <g transform="translate(600 46)">
+          <text x="0" y="0" text-anchor="middle" font-family="Suez One" font-size="22" fill="#2a5fa8">ביחד מאכילים את כולם</text>
+          <path d="M0 8 c0 -7 10 -7 10 0 c0 5 -10 12 -10 12 c0 0 -10 -7 -10 -12 c0 -7 10 -7 10 0" fill="#d43f2a" transform="translate(0 10)"/>
+        </g>
+        <g transform="translate(352 84)">
+          <text x="0" y="-14" text-anchor="middle" font-family="Suez One" font-size="17" fill="#7a4a1d">התפריט</text>
+          <text x="0" y="8" text-anchor="middle" font-family="Secular One" font-size="14" fill="#444">מרק · אורז</text>
+          <text x="0" y="28" text-anchor="middle" font-family="Secular One" font-size="14" fill="#444">קציצות · סלט</text>
+        </g>
+        <g transform="translate(930 128)">
+          <text x="0" y="0" text-anchor="middle" font-family="Suez One" font-size="24" fill="#7a4a1d">בתיאבון</text>
+        </g>`;
+      svg.insertBefore(patches, svg.querySelector("#queueG"));
+      /* כיסוי דגלוני המספרים הסטטיים שעל הדלפק */
+      const covers = document.createElementNS(SVGNS,"g");
+      covers.setAttribute("class","assetBg");
+      covers.innerHTML = "";
+      const firstTrayEl = svg.querySelector("#tray-soup");
+      firstTrayEl.parentNode.insertBefore(covers, firstTrayEl);
+    }
+    /* שלטי המגשים יושבים ישר מעל כל מגש, בגובה אחיד */
+    FKEYS.forEach(k=>{
+      const l = svg.querySelector(`#tray-${k} .tlabel`);
+      if(l) l.setAttribute("transform","translate(0 -16)");
+    });
+    if(typeof S !== "undefined" && S && S.queue) renderQueue();
+  }
+}
+
+/* ---- background scene (1000x750) ---- */
+function bgArt(){
+  /* stone tiles left wall */
+  let tiles="";
+  for(let r=0;r<10;r++){
+    const off = (r%2)*46;
+    for(let c=-1;c<3;c++){
+      const x=c*92+off, y=r*54;
+      const shade=["#c2c2c2","#b4b4b4","#bcbcbc","#adadad"][(r*3+c+4)%4];
+      tiles+=`<rect x="${x}" y="${y}" width="86" height="48" rx="4" fill="${shade}" stroke="#8b8b8b" stroke-width="3"/>`;
+      if((r*7+c)%5===0) tiles+=`<path d="M${x+14} ${y+10} l16 12 l-6 14" stroke="#999" stroke-width="2.5" fill="none"/>`;
+    }
+  }
+  return `
+  <g class="paint">
+  <!-- sky + street back -->
+  <rect x="0" y="0" width="1000" height="540" fill="url(#g-sky)"/>
+  <!-- buildings -->
+  <g stroke="#1a1a1a" stroke-width="5">
+    <rect x="470" y="20" width="560" height="150" fill="#efe6c4"/>
+    <rect x="470" y="20" width="560" height="20" fill="#e0d2a4" stroke="none"/>
+    <path d="M540 60 l30 24 M760 44 l-22 30 M920 70 l26 18" stroke="#c9b98a" stroke-width="4" fill="none"/>
+    <rect x="640" y="52" width="66" height="52" fill="#9cc4d8"/>
+    <line x1="673" y1="52" x2="673" y2="104" stroke="#5a7a8a" stroke-width="4"/>
+    <rect x="820" y="56" width="58" height="46" fill="#9cc4d8"/>
+    <rect x="812" y="98" width="74" height="16" fill="#b9b0b0"/>
+  </g>
+  <!-- hedge -->
+  <g fill="#2f8a22" stroke="#1e5c12" stroke-width="4">
+    <circle cx="330" cy="30" r="42"/><circle cx="392" cy="18" r="38"/><circle cx="270" cy="14" r="36"/>
+  </g>
+  <!-- road -->
+  <rect x="210" y="170" width="790" height="200" fill="#8f9598" stroke="#1a1a1a" stroke-width="5"/>
+  <g stroke="#e8e8e8" stroke-width="8" stroke-dasharray="42 30">
+    <line x1="240" y1="268" x2="1000" y2="268"/>
+  </g>
+  <!-- parked car right -->
+  <g stroke="#1a1a1a" stroke-width="5">
+    <path d="M760 240 q16 -44 70 -46 l96 0 q56 4 70 46 l4 44 l-244 2 Z" fill="#3a5fa8"/>
+    <path d="M796 240 q10 -30 44 -32 l60 0 q34 2 44 32 Z" fill="#b9dcef"/>
+    <circle cx="812" cy="290" r="26" fill="#222"/><circle cx="812" cy="290" r="11" fill="#cfcfcf"/>
+    <circle cx="952" cy="290" r="26" fill="#222"/><circle cx="952" cy="290" r="11" fill="#cfcfcf"/>
+  </g>
+  <!-- barrier -->
+  <g stroke="#1a1a1a" stroke-width="4">
+    <rect x="240" y="316" width="740" height="22" fill="#fff"/>
+    ${[0,1,2,3,4,5,6].map(i=>`<rect x="${252+i*104}" y="316" width="52" height="22" fill="#d43f2a" stroke="none"/>`).join("")}
+    <rect x="250" y="338" width="14" height="44" fill="#888"/>
+    <rect x="640" y="338" width="14" height="44" fill="#888"/>
+    <rect x="960" y="338" width="14" height="44" fill="#888"/>
+  </g>
+  <!-- sidewalk -->
+  <rect x="210" y="370" width="790" height="170" fill="#c4bfae" stroke="#1a1a1a" stroke-width="5"/>
+  <g stroke="#a8a390" stroke-width="3">
+    <line x1="330" y1="370" x2="300" y2="540"/><line x1="520" y1="370" x2="500" y2="540"/>
+    <line x1="710" y1="370" x2="700" y2="540"/><line x1="880" y1="370" x2="884" y2="540"/>
+  </g>
+  <!-- left stone wall -->
+  <g>
+    <rect x="0" y="0" width="212" height="540" fill="#b9b9b9"/>
+    ${tiles}
+    <rect x="206" y="0" width="10" height="540" fill="#6f6f6f"/>
+  </g>
+  <!-- shelf + boombox -->
+  <g>
+    <rect x="18" y="248" width="180" height="16" rx="3" fill="#3a5fa8" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M34 264 l-8 26 M182 264 l8 26" stroke="#1a1a1a" stroke-width="5"/>
+    <g transform="translate(34 168)">
+      <rect x="0" y="14" width="150" height="66" rx="8" fill="#c0392b" stroke="#1a1a1a" stroke-width="5"/>
+      <rect x="6" y="20" width="138" height="54" rx="5" fill="none" stroke="#7c1f14" stroke-width="3"/>
+      <circle cx="30" cy="47" r="19" fill="#d8d8d8" stroke="#1a1a1a" stroke-width="4"/>
+      <circle cx="30" cy="47" r="8" fill="#555"/>
+      <circle cx="120" cy="47" r="19" fill="#d8d8d8" stroke="#1a1a1a" stroke-width="4"/>
+      <circle cx="120" cy="47" r="8" fill="#555"/>
+      <rect x="57" y="30" width="36" height="20" rx="3" fill="#e8d44d" stroke="#1a1a1a" stroke-width="3"/>
+      <circle cx="66" cy="40" r="4" fill="#7c6a10"/><circle cx="84" cy="40" r="4" fill="#7c6a10"/>
+      <path d="M44 14 Q75 -12 106 14" stroke="#1a1a1a" stroke-width="5" fill="none"/>
+      <path d="M8 10 l-4 -18 M142 10 l6 -20" stroke="#1a1a1a" stroke-width="4"/>
+    </g>
+  </g>
+  </g>`;
+}
+
+/* ---- score sign + buttons ---- */
+function hudArt(){
+  return `
+  <g id="scoreSignG" transform="rotate(-1 150 80)">
+    <rect x="28" y="28" width="240" height="104" rx="4" fill="#f5ecc9" stroke="#1a1a1a" stroke-width="8"/>
+    <rect x="40" y="40" width="216" height="80" rx="3" fill="none" stroke="#c9bd8a" stroke-width="3"/>
+    <text id="scoreVal" x="148" y="102" text-anchor="middle" font-family="Suez One" font-size="58" fill="#111">0</text>
+  </g>
+  <g id="musicBtn" class="clickable">
+    <ellipse cx="936" cy="62" rx="46" ry="33" fill="#f2d24b" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="928" cy="52" rx="20" ry="10" fill="#fff" opacity=".55"/>
+    <path d="M928 78 l0 -30 l22 -6 l0 30" stroke="#1a1a1a" stroke-width="6" fill="none"/>
+    <circle cx="922" cy="78" r="8" fill="#1a1a1a"/><circle cx="944" cy="72" r="8" fill="#1a1a1a"/>
+    <rect x="884" y="92" width="104" height="24" rx="12" fill="#1a1a1a" opacity=".82"/>
+    <text id="musicHint" x="936" y="110" text-anchor="middle" font-family="Secular One" font-size="16" fill="#f5ecc9">100</text>
+  </g>
+  <g id="pauseBtn" class="clickable">
+    <ellipse cx="936" cy="152" rx="46" ry="33" fill="#f2d24b" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="928" cy="142" rx="20" ry="10" fill="#fff" opacity=".55"/>
+    <rect x="920" y="136" width="11" height="34" rx="3" fill="#1a1a1a"/>
+    <rect x="940" y="136" width="11" height="34" rx="3" fill="#1a1a1a"/>
+  </g>
+  <g id="soundBtn" class="clickable">
+    <ellipse cx="936" cy="232" rx="46" ry="33" fill="#f2d24b" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="928" cy="222" rx="20" ry="10" fill="#fff" opacity=".55"/>
+    <path d="M918 224 l-12 0 l0 16 l12 0 l14 12 l0 -40 Z" fill="#1a1a1a"/>
+    <g id="sndWaves"><path d="M940 224 q7 8 0 16 M948 218 q12 14 0 28" stroke="#1a1a1a" stroke-width="4" fill="none"/></g>
+    <g id="sndMute" style="display:none"><path d="M940 222 l18 20 M958 222 l-18 20" stroke="#c9231a" stroke-width="5"/></g>
+  </g>
+  <g id="musicNotes" style="display:none">
+    <text x="880" y="120" font-size="40" fill="#7a1fbd" class="steam">♪</text>
+    <text x="850" y="150" font-size="32" fill="#b32d8a" class="steam" style="animation-delay:.5s">♫</text>
+  </g>
+  <!-- לוח ההזמנה: רצועה על חזית הדלפק, ליד המגשים -->
+  <g id="orderBoard" style="display:none">
+    <rect x="392" y="612" width="592" height="106" rx="12" fill="#fffdf2" stroke="#1a1a1a" stroke-width="7"/>
+    <rect x="392" y="612" width="592" height="36" rx="12" fill="#d43f0f"/>
+    <rect x="392" y="636" width="592" height="12" fill="#d43f0f"/>
+    <text id="obTitle" x="966" y="639" text-anchor="end" font-family="Suez One" font-size="24" fill="#fff8e8">ההזמנה</text>
+    <g id="obRows"></g>
+  </g>`;
+}
+
+/* צ'יפ הזמנה אחד: כמה עוד צריך מכל מנה. נבנה מימין לשמאל */
+function orderRowArt(key, remaining, i){
+  const x = 838 - i*144;
+  const done = remaining<=0;
+  const swatch = { soup:"#e8952f", rice:"#f2ead6", patty:"#8a5a2b", salad:"#3f9b2f" }[key];
+  return `
+    <g opacity="${done?0.45:1}">
+      <rect x="${x}" y="660" width="134" height="50" rx="9" fill="${done?'#eceade':'#f6f1dc'}" stroke="#1a1a1a" stroke-width="3"/>
+      <rect x="${x+96}" y="668" width="30" height="34" rx="6" fill="${swatch}" stroke="#1a1a1a" stroke-width="3"/>
+      <text x="${x+88}" y="694" text-anchor="end" font-family="Secular One" font-size="21" fill="#1a1a1a">${FOODS[key].name}</text>
+      <text x="${x+14}" y="696" text-anchor="start" font-family="Suez One" font-size="30" fill="${done?'#3f9b1e':'#c9231a'}">${done?'✓':remaining}</text>
+    </g>`;
+}
+
+/* ---- worker window (Shimon) ---- */
+function workerArt(){
+  return `
+  <g id="workerG" class="clickable" transform="translate(6 300)">
+    <rect class="hit" x="0" y="0" width="200" height="238" fill="#fff" fill-opacity="0.001"/>
+    <g class="wpaint">
+    <!-- window frame -->
+    <rect x="0" y="0" width="200" height="230" rx="8" fill="#3a3a3a" stroke="#1a1a1a" stroke-width="6"/>
+    <rect x="12" y="12" width="176" height="206" rx="5" fill="#242424"/>
+    <rect x="0" y="216" width="200" height="22" fill="url(#g-steel)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- shimon -->
+    <g>
+      <!-- shoulders + apron -->
+      <path d="M28 218 Q34 168 62 160 L138 160 Q168 168 174 218 Z" fill="#e8e8e8" stroke="#1a1a1a" stroke-width="5"/>
+      <path d="M58 168 L142 168 L136 218 L64 218 Z" fill="#d43f0f" stroke="#1a1a1a" stroke-width="4"/>
+      <!-- head -->
+      <path d="M56 92 Q52 146 78 158 Q100 168 122 158 Q148 146 144 92 Q144 54 100 54 Q56 54 56 92 Z"
+            fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+      <path d="M138 96 Q146 128 124 152 Q140 138 140 100 Z" fill="rgba(90,50,10,.18)"/>
+      <!-- chef hat -->
+      <path d="M50 74 Q40 30 68 30 Q70 8 100 12 Q130 8 132 30 Q160 30 150 74 Z" fill="#fdfdfd" stroke="#1a1a1a" stroke-width="5"/>
+      <rect x="52" y="66" width="96" height="16" fill="#fdfdfd" stroke="#1a1a1a" stroke-width="5"/>
+      <path d="M66 34 q6 -14 18 -10 M104 24 q10 -8 16 4" stroke="#ddd" stroke-width="3" fill="none"/>
+      <!-- ears -->
+      <ellipse cx="52" cy="112" rx="9" ry="14" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="4"/>
+      <ellipse cx="148" cy="112" rx="9" ry="14" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="4"/>
+      <!-- face -->
+      <rect x="64" y="92" width="26" height="8" rx="4" fill="#3a2a1a"/>
+      <rect x="110" y="92" width="26" height="8" rx="4" fill="#3a2a1a"/>
+      <circle cx="78" cy="110" r="6" fill="#111"/>
+      <circle cx="122" cy="110" r="6" fill="#111"/>
+      <path d="M100 108 Q92 128 100 134 Q106 130 103 122" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+      <path d="M70 138 Q100 158 130 138 Q118 148 100 147 Q82 148 70 138" fill="#3a2a1a" stroke="#1a1a1a" stroke-width="3"/>
+      <path d="M80 150 Q100 158 120 150" fill="none" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round"/>
+      <!-- ladle in hand -->
+      <g>
+        <path d="M158 210 q26 -30 20 -62" stroke="#666" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <ellipse cx="176" cy="142" rx="16" ry="11" fill="#9aa5ab" stroke="#1a1a1a" stroke-width="4"/>
+      </g>
+    </g>
+    <!-- steam from window -->
+    <g stroke="#ddd" stroke-width="5" fill="none" opacity=".7">
+      <path class="steam" d="M40 8 q8 -14 -2 -26"/>
+      <path class="steam" style="animation-delay:1.2s" d="M160 6 q-8 -14 2 -26"/>
+    </g>
+    <text x="100" y="252" text-anchor="middle" font-family="Secular One" font-size="19" fill="#f5ecc9">שמעון</text>
+    </g>
+    <g id="workerBubble" style="display:none">
+      <rect x="30" y="-46" width="150" height="38" rx="14" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M70 -8 l10 14 l6 -14" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+      <text x="105" y="-19" text-anchor="middle" font-family="Secular One" font-size="20" fill="#111">שנייה, ממלא!</text>
+    </g>
+  </g>`;
+}
+
+/* ---- counter + trays + register ---- */
+function trayFood(key){
+  if(key==="soup") return `
+    <g>
+      <ellipse cx="0" cy="0" rx="74" ry="20" fill="url(#g-soup)"/>
+      <ellipse cx="0" cy="-3" rx="70" ry="17" fill="#f0a044"/>
+      <circle cx="-30" cy="-4" r="8" fill="#c9641c"/><circle cx="10" cy="-6" r="7" fill="#c9641c"/>
+      <circle cx="34" cy="-2" r="6" fill="#e8c060"/><circle cx="-8" cy="0" r="5" fill="#e8c060"/>
+      <ellipse cx="-20" cy="-8" rx="10" ry="3" fill="#ffd08a" opacity=".8"/>
+      <path d="M52 -14 q20 -34 6 -58" stroke="#777" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <ellipse cx="56" cy="-76" rx="14" ry="9" fill="#9aa5ab" stroke="#1a1a1a" stroke-width="4"/>
+      <g stroke="#ddd" stroke-width="5" fill="none" opacity=".65">
+        <path class="steam" d="M-36 -22 q8 -16 -2 -30"/>
+        <path class="steam" style="animation-delay:.8s" d="M14 -24 q-8 -16 2 -30"/>
+      </g>
+    </g>`;
+  if(key==="rice") return `
+    <g>
+      <path d="M-70 6 Q-56 -26 0 -30 Q56 -26 70 6 Q40 16 0 16 Q-40 16 -70 6" fill="#f6f1e2" stroke="#cabf9c" stroke-width="3"/>
+      <path d="M-70 6 Q-30 -14 20 -16 Q-10 -26 -46 -12 Q-64 -4 -70 6" fill="#fff" opacity=".7"/>
+      ${[[-40,-8,15],[-16,-16,-20],[8,-10,30],[30,-14,-12],[46,-4,20],[-2,0,-28],[22,2,12],[-28,2,-16]]
+        .map(([x,y,r])=>`<ellipse cx="${x}" cy="${y}" rx="7" ry="3" fill="#fff" stroke="#d8cfae" stroke-width="1.5" transform="rotate(${r} ${x} ${y})"/>`).join("")}
+    </g>`;
+  if(key==="patty") return `
+    <g stroke="#3a2410" stroke-width="3">
+      ${[[-46,-4,17,"#8a5a2b"],[-14,-12,18,"#96652f"],[20,-6,17,"#7c4f24"],[46,-2,15,"#8a5a2b"],
+         [-30,6,15,"#7c4f24"],[4,4,16,"#96652f"],[34,8,14,"#8a5a2b"],[-4,-22,14,"#a06c33"]]
+        .map(([x,y,r,c])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`).join("")}
+      ${[[-46,-8],[-14,-18],[20,-11],[4,-2],[-4,-27]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="6" ry="3" fill="#c9964e" stroke="none" opacity=".8"/>`).join("")}
+    </g>`;
+  /* salad */
+  return `
+    <g stroke="#1e5c12" stroke-width="2.5">
+      ${[[-50,-4,11,"#3f9b2f"],[-28,-14,10,"#e33b2a"],[-6,-6,11,"#3f9b2f"],[16,-14,10,"#e33b2a"],
+         [38,-6,10,"#3f9b2f"],[52,2,8,"#e8d44d"],[-38,6,9,"#e33b2a"],[-14,8,9,"#e8d44d"],
+         [8,6,10,"#3f9b2f"],[30,8,9,"#e33b2a"],[-2,-18,9,"#2f8a22"],[24,-2,7,"#e8d44d"]]
+        .map(([x,y,r,c])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="${c}"/>`).join("")}
+    </g>`;
+}
+
+function trayArt(key,x,y,w){
+  const h=Math.round(w*0.5);
+  const body = key==="soup" ? `
+    <!-- big steel pot -->
+    <path d="M${-w/2+10} 0 L${w/2-10} 0 L${w/2-20} ${h} L${-w/2+20} ${h} Z" fill="url(#g-steel)" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M${-w/2+2} -4 L${w/2-2} -4 L${w/2-6} 12 L${-w/2+6} 12 Z" fill="#cfd6db" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="0" cy="-4" rx="${w/2-8}" ry="14" fill="#8a9298" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="0" cy="-4" rx="${w/2-16}" ry="10" fill="url(#g-soup)"/>
+    <circle cx="-26" cy="-6" r="6" fill="#c9641c"/><circle cx="12" cy="-4" r="5" fill="#c9641c"/>
+    <circle cx="30" cy="-8" r="4" fill="#e8c060"/><ellipse cx="-6" cy="-8" rx="9" ry="3" fill="#ffd08a" opacity=".8"/>
+    <path d="M${-w/2+4} 20 q-16 2 -14 18 M${w/2-4} 20 q16 2 14 18" stroke="#1a1a1a" stroke-width="7" fill="none"/>
+    <path d="M34 -10 q18 -34 4 -60" stroke="#777" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <ellipse cx="38" cy="-72" rx="15" ry="10" fill="#9aa5ab" stroke="#1a1a1a" stroke-width="4"/>
+    <g stroke="#eee" stroke-width="5" fill="none" opacity=".7">
+      <path class="steam" d="M-30 -22 q8 -16 -2 -30"/>
+      <path class="steam" style="animation-delay:.8s" d="M8 -26 q-8 -16 2 -30"/>
+    </g>
+    <path d="M${-w/2+26} ${h-10} q${w/2-26} 10 ${w-52} 0" stroke="#5f686e" stroke-width="4" fill="none" opacity=".6"/>` : `
+    <!-- steel tray 3d -->
+    <path d="M${-w/2} 0 L${w/2} 0 L${w/2-16} ${h} L${-w/2+16} ${h} Z" fill="url(#g-steel)" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M${-w/2} 0 L${w/2} 0 L${w/2-5} 14 L${-w/2+5} 14 Z" fill="#e8eef2" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M${-w/2+20} ${h-8} q${w/2-20} 10 ${w-40} 0" stroke="#5f686e" stroke-width="4" fill="none" opacity=".6"/>
+    <g class="trayFood" transform="translate(0 12)">${trayFood(key)}</g>`;
+  return `
+  <g id="tray-${key}" class="clickable" transform="translate(${x} ${y})">
+    <g class="paint">${key==="soup"?`<g class="trayFood">${body}</g>`:body}</g>
+    <rect class="hit" x="${-w/2}" y="-40" width="${w}" height="${h+48}" fill="#fff" fill-opacity="0.001"/>
+    <!-- שלט המגש: השם וכמה עוד צריך, באותו אלמנט. תמיד מיושר. -->
+    <g class="tlabel" transform="translate(0 ${-30})">
+      <rect x="-62" y="-23" width="124" height="32" rx="11" fill="#2b2b2b" opacity=".88"/>
+      <text class="tname" x="12" y="1" text-anchor="middle" font-family="Secular One" font-size="20" fill="#f5ecc9">${FOODS[key].name}</text>
+      <g class="cntBadge" style="display:none">
+        <circle cx="-42" cy="-7" r="16" fill="#fffdf2" stroke="#1a1a1a" stroke-width="3"/>
+        <text class="fnum" x="-42" y="1" text-anchor="middle" font-family="Suez One" font-size="20" fill="#c9231a">2</text>
+      </g>
+    </g>
+    <!-- מד מלאי דק, במקום אחוזים גדולים על האוכל -->
+    <g class="stockBar" transform="translate(0 ${h+4})">
+      <rect x="-46" y="0" width="92" height="9" rx="4" fill="#1a1a1a" opacity=".5"/>
+      <rect class="stockFill" x="-44" y="2" width="88" height="5" rx="2" fill="#3f9b1e"/>
+    </g>
+    <text class="pct" x="0" y="0" style="display:none">100%</text>
+  </g>`;
+}
+
+function counterArt(){
+  return `
+  <g class="paint">
+  <!-- counter top -->
+  <rect x="0" y="520" width="1000" height="230" fill="url(#g-counter)" stroke="#1a1a1a" stroke-width="6"/>
+  <rect x="0" y="520" width="1000" height="18" fill="#cfd6da"/>
+  <g fill="#e8d9a8" opacity=".9">
+    <path d="M250 700 l10 4 l-6 6 l-9 -4 Z"/><path d="M640 690 l12 3 l-4 8 l-11 -3 Z"/>
+    <path d="M120 690 l9 5 l-7 5 l-8 -5 Z"/><path d="M905 715 l10 4 l-6 6 l-9 -4 Z"/>
+  </g>
+  </g>
+  ${trayArt("soup",140,566,170)}
+  ${trayArt("patty",322,570,160)}
+  ${trayArt("salad",492,570,160)}
+  ${trayArt("rice",662,570,160)}
+  <!-- spray -->
+  <g id="sprayG" class="clickable" transform="translate(748 472)">
+    <g class="paint">
+    <rect x="0" y="26" width="42" height="88" rx="8" fill="#2a72c9" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M4 40 q16 -8 34 0 l0 12 q-18 8 -34 0 Z" fill="#fff" opacity=".85"/>
+    <path d="M6 76 l14 -22 l4 10 l12 -16" stroke="#f2d24b" stroke-width="4" fill="none"/>
+    <rect x="8" y="6" width="18" height="22" fill="#ccc" stroke="#1a1a1a" stroke-width="4"/>
+    <rect x="22" y="8" width="16" height="12" fill="#d43f2a" stroke="#1a1a1a" stroke-width="4"/>
+    </g>
+    <rect class="hit" x="-6" y="0" width="54" height="120" fill="#fff" fill-opacity="0.001"/>
+  </g>
+  <!-- plate stack -->
+  <g id="platesG" class="clickable" transform="translate(772 590)">
+    <g class="paint">
+    ${[72,60,48,36,24,12,0].map(y=>`
+      <ellipse cx="60" cy="${y+18}" rx="58" ry="16" fill="${y%24?'#e4e4e0':'#f2f2ee'}" stroke="#1a1a1a" stroke-width="4"/>
+      <ellipse cx="60" cy="${y+14}" rx="58" ry="16" fill="${y%24?'#eDeDe9':'#fbfbf7'}" stroke="#1a1a1a" stroke-width="4"/>`).join("")}
+    <ellipse cx="60" cy="8" rx="40" ry="9" fill="#fff" stroke="#bbb" stroke-width="2"/>
+    </g>
+    <rect class="hit" x="-4" y="-8" width="128" height="112" fill="#fff" fill-opacity="0.001"/>
+    <g transform="translate(60 -18)">
+      <rect x="-46" y="-22" width="92" height="30" rx="10" fill="#2b2b2b" opacity=".85"/>
+      <text x="0" y="1" text-anchor="middle" font-family="Secular One" font-size="20" fill="#f5ecc9">צלחות</text>
+    </g>
+  </g>
+  <!-- register -->
+  <g class="paint" transform="translate(886 496) rotate(-4)">
+    <path d="M0 60 L140 46 L150 130 L6 142 Z" fill="url(#g-cash)" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M8 62 L134 50 L138 76 L12 88 Z" fill="#8a7410" opacity=".5"/>
+    ${[0,1,2,3].map(r=>[0,1,2].map(c=>
+      `<rect x="${26+c*32}" y="${86+r*13-c*1}" width="22" height="9" rx="3" fill="#f8eeb8" stroke="#7c6a10" stroke-width="2"/>`).join("")).join("")}
+    <path d="M20 46 L120 36 L126 10 L30 18 Z" fill="#f2d24b" stroke="#1a1a1a" stroke-width="5"/>
+    <rect x="46" y="16" width="56" height="18" rx="3" fill="#2b3a2b" transform="rotate(-4 74 25)"/>
+  </g>
+  <!-- plaque on counter front -->
+  <g class="paint" transform="translate(560 712) rotate(-1)">
+    <rect x="-160" y="-28" width="320" height="56" rx="8" fill="#8a5a2b" stroke="#1a1a1a" stroke-width="5"/>
+    <rect x="-152" y="-20" width="304" height="40" rx="5" fill="#a8743c" stroke="#5e3812" stroke-width="3"/>
+    <text x="0" y="10" text-anchor="middle" font-family="Suez One" font-size="26" fill="#fff8e8">בית תמחוי · אוכל חם לכל אחד</text>
+  </g>`;
+}
+
+/* ---- player hand + plate (bottom-left) ---- */
+function handArt(){
+  return `
+  <g id="handG">
+    <!-- forearm from corner -->
+    <g class="armNoPlate">
+      <path d="M-40 760 Q60 700 190 690 Q250 688 268 706 Q280 726 260 744 Q200 760 120 764 Z"
+            fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="6"/>
+      <g stroke="#6b4a26" stroke-width="2.5" opacity=".8">
+        <path d="M60 726 q6 -8 12 -2 M96 716 q6 -8 12 -2 M140 708 q6 -8 12 -2 M74 744 q6 -8 12 -2 M116 734 q6 -8 12 -2"/>
+      </g>
+      <path d="M228 700 q18 8 12 30" stroke="#c9964e" stroke-width="5" fill="none"/>
+    </g>
+    <g class="armPlate" style="display:none">
+      <!-- arm raised holding plate -->
+      <path d="M-40 762 Q40 716 130 700 Q190 690 210 706 Q224 726 204 744 Q140 760 60 766 Z"
+            fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="6"/>
+      <g stroke="#6b4a26" stroke-width="2.5" opacity=".8">
+        <path d="M60 736 q6 -8 12 -2 M100 724 q6 -8 12 -2 M140 714 q6 -8 12 -2 M76 750 q6 -8 12 -2"/>
+      </g>
+      <!-- gold bracelet -->
+      <path d="M76 732 q30 -16 58 -22 l6 20 q-30 8 -56 22 Z" fill="#f2d24b" stroke="#8a7410" stroke-width="4"/>
+      <!-- plate -->
+      <g transform="translate(228 692)">
+        <ellipse cx="0" cy="0" rx="138" ry="40" fill="#f4f4f0" stroke="#1a1a1a" stroke-width="6"/>
+        <ellipse cx="0" cy="-5" rx="104" ry="26" fill="#fff" stroke="#c9c9c1" stroke-width="3"/>
+        <path d="M-134 8 A138 40 0 0 0 134 8" stroke="#b9b9b1" stroke-width="4" fill="none"/>
+        <g id="plateItemsG"></g>
+      </g>
+      <!-- thumb over plate rim -->
+      <path d="M186 730 q26 -16 44 -4 q10 10 -4 20 q-20 10 -40 4 Z" fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="5"/>
+    </g>
+  </g>`;
+}
+
+/* plate mini items */
+function plateItem(key,x,y){
+  if(key==="soup") return `<g transform="translate(${x} ${y})">
+    <ellipse cx="0" cy="4" rx="26" ry="10" fill="#c96a1e" stroke="#1a1a1a" stroke-width="3"/>
+    <path d="M-26 4 a26 10 0 0 0 52 0 l-4 12 a22 8 0 0 1 -44 0 Z" fill="#a8541a" stroke="#1a1a1a" stroke-width="3"/>
+    <ellipse cx="0" cy="2" rx="20" ry="7" fill="#f0a044"/>
+  </g>`;
+  if(key==="rice") return `<g transform="translate(${x} ${y})">
+    <path d="M-24 6 Q-16 -10 0 -11 Q16 -10 24 6 Q10 12 0 12 Q-10 12 -24 6" fill="#f6f1e2" stroke="#cabf9c" stroke-width="2.5"/>
+    <ellipse cx="-8" cy="-2" rx="5" ry="2" fill="#fff"/><ellipse cx="6" cy="2" rx="5" ry="2" fill="#fff"/>
+  </g>`;
+  if(key==="patty") return `<g transform="translate(${x} ${y})" stroke="#3a2410" stroke-width="2.5">
+    <circle cx="-8" cy="2" r="10" fill="#8a5a2b"/><circle cx="9" cy="-2" r="10" fill="#96652f"/>
+    <ellipse cx="-10" cy="-2" rx="4" ry="2" fill="#c9964e" stroke="none"/>
+  </g>`;
+  return `<g transform="translate(${x} ${y})" stroke="#1e5c12" stroke-width="2">
+    <circle cx="-10" cy="0" r="7" fill="#3f9b2f"/><circle cx="2" cy="-4" r="6" fill="#e33b2a"/>
+    <circle cx="10" cy="3" r="6" fill="#e8d44d"/><circle cx="-2" cy="5" r="5" fill="#3f9b2f"/>
+  </g>`;
+}
+
+/* =====================================================
+   CAST — חמש קריקטורות, כל אחת ציור נפרד
+   local coords: 260 wide, 470 tall, feet cropped by counter
+   ===================================================== */
+
+function meterArt(cx){
+  return `
+  <g class="meterG" transform="translate(${cx-88} ${METER_Y})">
+    <rect x="-4" y="-4" width="40" height="104" rx="8" fill="#f8f8f4" stroke="#1a1a1a" stroke-width="5"/>
+    <rect class="mfill" x="2" y="94" width="28" height="0" fill="url(#g-meter)"/>
+    ${[1,2,3].map(i=>`<line x1="-4" y1="${-4+i*26}" x2="36" y2="${-4+i*26}" stroke="#c9c9c1" stroke-width="3"/>`).join("")}
+    <rect x="-4" y="-4" width="40" height="104" rx="8" fill="none" stroke="#1a1a1a" stroke-width="5"/>
+  </g>`;
+}
+
+function bubbleArt(cx){
+  return `
+  <g class="shout" transform="translate(${cx-90} ${BUBBLE_Y})" style="display:none">
+    <rect x="0" y="0" width="190" height="42" rx="16" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M120 40 l12 18 l8 -18" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+    <text class="shoutTxt" x="95" y="29" text-anchor="middle" font-family="Secular One" font-size="21" fill="#111">נו כבר!</text>
+  </g>`;
+}
+
+/* ---------- 1: סבא יוסף — קירח, שפם לבן, זעפן ---------- */
+function art_yosef(){
+  return `
+  <g class="body">
+    <!-- cardigan -->
+    <path d="M18 470 Q22 372 74 356 L186 356 Q238 372 242 470 Z" fill="#6e5636" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M74 356 L108 366 L96 470 L60 470 Q58 400 74 356" fill="#5c4728" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M186 356 L152 366 L164 470 L200 470 Q202 400 186 356" fill="#5c4728" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M108 366 L152 366 L148 470 L112 470 Z" fill="#e8e0c8" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M118 380 l8 10 l-8 10 M142 380 l-8 10 l8 10" stroke="#b9ae8a" stroke-width="3" fill="none"/>
+    <!-- neck -->
+    <path d="M106 320 L154 320 L150 362 Q130 372 110 362 Z" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M112 340 q18 10 36 0" stroke="#b98a58" stroke-width="3" fill="none"/>
+    <!-- head: jowly -->
+    <path d="M62 170 Q54 120 76 96 Q98 74 130 74 Q162 74 184 96 Q206 120 198 170
+             Q196 220 188 252 Q184 286 196 300 Q184 322 158 330 Q130 340 102 330
+             Q76 322 64 300 Q76 286 72 252 Q64 220 62 170 Z"
+          fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="6"/>
+    <!-- shading right side + under chin -->
+    <path d="M184 110 Q202 160 192 220 Q188 268 196 298 Q176 316 158 324 Q180 300 178 250 Q186 180 176 122 Z" fill="rgba(90,50,10,.16)"/>
+    <path d="M100 330 Q130 338 158 328 Q132 320 100 330" fill="rgba(90,50,10,.2)"/>
+    <!-- bald dome shine -->
+    <ellipse cx="112" cy="104" rx="30" ry="16" fill="#fff" opacity=".45" transform="rotate(-14 112 104)"/>
+    <!-- side tufts -->
+    <path d="M58 172 q-22 -6 -22 22 q0 26 20 34 q14 6 20 -4 q-14 -22 -18 -52" fill="#e8e8e4" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M202 172 q22 -6 22 22 q0 26 -20 34 q-14 6 -20 -4 q14 -22 18 -52" fill="#e8e8e4" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- ears -->
+    <path d="M56 196 q-16 -2 -14 18 q2 22 20 24 q10 0 10 -10" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M204 196 q16 -2 14 18 q-2 22 -20 24 q-10 0 -10 -10" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- forehead wrinkles -->
+    <g stroke="#a87848" stroke-width="3.5" fill="none">
+      <path d="M84 128 Q130 116 176 128"/>
+      <path d="M88 146 Q130 136 172 146"/>
+      <path d="M94 164 Q130 156 166 164"/>
+    </g>
+    <!-- brows: bushy white -->
+    <g class="browL"><path d="M78 186 q24 -16 50 -6 l-4 14 q-24 -8 -44 4 Z" fill="#e8e8e4" stroke="#1a1a1a" stroke-width="4"/></g>
+    <g class="browR"><path d="M182 186 q-24 -16 -50 -6 l4 14 q24 -8 44 4 Z" fill="#e8e8e4" stroke="#1a1a1a" stroke-width="4"/></g>
+    <!-- eyes with bags -->
+    <ellipse cx="104" cy="208" rx="14" ry="10" fill="#fff" stroke="#1a1a1a" stroke-width="3"/>
+    <ellipse cx="156" cy="208" rx="14" ry="10" fill="#fff" stroke="#1a1a1a" stroke-width="3"/>
+    <circle cx="106" cy="210" r="5" fill="#111"/><circle cx="154" cy="210" r="5" fill="#111"/>
+    <path d="M92 222 q12 8 26 2 M134 224 q12 8 26 0" stroke="#a87848" stroke-width="3" fill="none"/>
+    <!-- big bulbous nose -->
+    <path d="M130 200 Q118 240 112 256 Q108 276 130 280 Q152 276 148 256 Q142 240 130 200 Z"
+          fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="130" cy="266" rx="17" ry="13" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="123" cy="272" rx="4" ry="3" fill="#7c4a20"/>
+    <ellipse cx="137" cy="272" rx="4" ry="3" fill="#7c4a20"/>
+    <ellipse cx="124" cy="258" rx="6" ry="4" fill="#fff" opacity=".5"/>
+    <!-- nasolabial folds -->
+    <path d="M104 262 q-6 18 4 32 M156 262 q6 18 -4 32" stroke="#a87848" stroke-width="3.5" fill="none"/>
+    <!-- white mustache -->
+    <path d="M92 292 Q130 274 168 292 Q160 306 130 302 Q100 306 92 292 Z" fill="#ececea" stroke="#1a1a1a" stroke-width="4"/>
+    <!-- mouths -->
+    <path class="m-neutral" d="M108 314 Q130 306 152 314" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+    <g class="m-angry" style="display:none">
+      <path d="M104 308 Q130 300 156 308 Q152 328 130 330 Q108 328 104 308 Z" fill="#5c1f14" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M108 309 L152 309 L150 316 L110 316 Z" fill="#fff"/>
+    </g>
+    <g class="m-happy" style="display:none">
+      <path d="M102 306 Q130 330 158 306 Q150 326 130 328 Q110 326 102 306 Z" fill="#7c2727" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M106 308 L154 308 L150 315 L110 315 Z" fill="#fff"/>
+    </g>
+    <!-- liver spots -->
+    <circle cx="88" cy="118" r="4" fill="#b98a58" opacity=".7"/>
+    <circle cx="170" cy="108" r="3.5" fill="#b98a58" opacity=".7"/>
+  </g>`;
+}
+
+/* ---------- 2: סבתא רבקה — מטפחת, משקפיים, שן אחת ---------- */
+function art_rivka(){
+  return `
+  <g class="body">
+    <!-- dress -->
+    <path d="M30 470 Q34 380 84 362 L176 362 Q226 380 230 470 Z" fill="#8a3a78" stroke="#1a1a1a" stroke-width="6"/>
+    ${[[70,410],[120,430],[170,404],[96,456],[150,458],[196,440]].map(([x,y])=>
+      `<circle cx="${x}" cy="${y}" r="8" fill="#c96aac" stroke="#5c1f4e" stroke-width="2.5"/>`).join("")}
+    <!-- collar frill -->
+    <path d="M84 362 Q100 378 118 364 Q130 380 142 364 Q158 378 176 362 L176 374 Q130 392 84 374 Z" fill="#e8b9d8" stroke="#1a1a1a" stroke-width="4"/>
+    <!-- hunched neck -->
+    <path d="M108 322 L152 322 L150 366 Q130 374 110 366 Z" fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- head: narrow, sunken -->
+    <path d="M74 168 Q70 116 96 96 Q120 80 140 80 Q168 82 184 104 Q198 126 192 172
+             Q190 216 182 248 Q178 282 188 296 Q174 318 148 326 Q124 332 104 322
+             Q84 312 78 294 Q88 278 84 246 Q76 214 74 168 Z"
+          fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="6"/>
+    <!-- cheek hollows + shading -->
+    <path d="M176 120 Q194 168 184 224 Q180 266 188 294 Q170 312 150 320 Q172 296 170 248 Q180 180 168 128 Z" fill="rgba(80,40,10,.18)"/>
+    <path d="M96 240 q4 22 18 34 q-18 -4 -24 -22 Z" fill="rgba(80,40,10,.16)"/>
+    <path d="M170 240 q-4 22 -18 34 q18 -4 24 -22 Z" fill="rgba(80,40,10,.16)"/>
+    <!-- headscarf -->
+    <path d="M66 176 Q52 96 108 70 Q136 58 164 72 Q206 92 198 176 Q192 130 168 112 Q136 92 104 110 Q76 128 66 176 Z"
+          fill="#2a8a8a" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M66 176 Q60 200 68 224 Q56 218 52 196 Q50 180 66 176 Z" fill="#2a8a8a" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M196 174 q20 4 16 30 q-4 24 -24 28 q-6 -8 -2 -14 q14 -8 12 -24 q0 -12 -2 -20" fill="#1f6b6b" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M86 122 q22 -20 52 -18" stroke="#1f6b6b" stroke-width="5" fill="none"/>
+    <!-- grey wisp -->
+    <path d="M100 116 q10 -14 26 -12 q-8 10 -6 20 q-12 -2 -20 -8" fill="#d8d8d4" stroke="#1a1a1a" stroke-width="4"/>
+    <!-- ears -->
+    <path d="M70 206 q-14 0 -12 18 q2 20 18 20 q8 0 8 -8" fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- big red glasses -->
+    <g>
+      <circle cx="106" cy="204" r="30" fill="#cfe4f2" fill-opacity=".65" stroke="#a82a2a" stroke-width="7"/>
+      <circle cx="164" cy="204" r="30" fill="#cfe4f2" fill-opacity=".65" stroke="#a82a2a" stroke-width="7"/>
+      <path d="M134 200 q2 -8 4 0" stroke="#a82a2a" stroke-width="7" fill="none"/>
+      <path d="M76 198 l-10 -4 M194 198 l10 -4" stroke="#a82a2a" stroke-width="7"/>
+      <path d="M92 192 q10 -10 22 -4 M150 192 q10 -10 22 -4" stroke="#fff" stroke-width="5" opacity=".8" fill="none"/>
+    </g>
+    <!-- squinty eyes behind glasses -->
+    <path d="M96 208 q10 6 20 0" stroke="#1a1a1a" stroke-width="4" fill="none"/>
+    <path d="M154 208 q10 6 20 0" stroke="#1a1a1a" stroke-width="4" fill="none"/>
+    <g class="browL"><path d="M88 176 q16 -8 34 -4" stroke="#b9b9b4" stroke-width="6" fill="none" stroke-linecap="round"/></g>
+    <g class="browR"><path d="M182 176 q-16 -8 -34 -4" stroke="#b9b9b4" stroke-width="6" fill="none" stroke-linecap="round"/></g>
+    <!-- long thin nose -->
+    <path d="M134 208 Q128 244 122 256 Q118 270 134 272 Q146 270 142 256 Q140 240 138 208"
+          fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="128" cy="264" rx="3.5" ry="2.5" fill="#7c4a20"/>
+    <!-- wrinkles around mouth -->
+    <path d="M102 262 q-6 16 2 28 M164 262 q6 16 -2 28" stroke="#a87040" stroke-width="3" fill="none"/>
+    <path d="M110 240 q-4 4 -2 10 M158 240 q4 4 2 10" stroke="#a87040" stroke-width="2.5" fill="none"/>
+    <!-- mouths: open with one tooth -->
+    <g class="m-neutral">
+      <path d="M106 286 Q132 274 160 286 Q156 312 132 314 Q110 312 106 286 Z" fill="#4a1610" stroke="#1a1a1a" stroke-width="4"/>
+      <rect x="124" y="288" width="14" height="16" rx="3" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+    </g>
+    <g class="m-angry" style="display:none">
+      <path d="M100 284 Q132 268 164 284 Q160 322 132 324 Q104 322 100 284 Z" fill="#4a1610" stroke="#1a1a1a" stroke-width="4"/>
+      <rect x="122" y="286" width="15" height="18" rx="3" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+      <path d="M104 300 q28 14 56 0" stroke="#7c2a20" stroke-width="3" fill="none"/>
+    </g>
+    <g class="m-happy" style="display:none">
+      <path d="M102 284 Q132 306 162 284 Q156 310 132 312 Q108 310 102 284 Z" fill="#7c2727" stroke="#1a1a1a" stroke-width="4"/>
+      <rect x="125" y="286" width="13" height="13" rx="3" fill="#fff" stroke="#1a1a1a" stroke-width="2.5"/>
+    </g>
+    <!-- chin -->
+    <path d="M122 322 q10 6 20 0" stroke="#a87040" stroke-width="3" fill="none"/>
+  </g>`;
+}
+
+/* ---------- 3: מוטי — גבה אחת, לסת רחבה, זיפים ---------- */
+function art_moti(){
+  return `
+  <g class="body">
+    <!-- jacket over tee -->
+    <path d="M14 470 Q18 376 72 358 L188 358 Q242 376 246 470 Z" fill="#5c6650" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M72 358 L104 372 L92 470 L52 470 Q52 396 72 358" fill="#4a5440" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M188 358 L156 372 L168 470 L208 470 Q208 396 188 358" fill="#4a5440" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M104 372 L156 372 L152 470 L108 470 Z" fill="#e07820" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M112 398 Q130 408 148 398" stroke="#a8541a" stroke-width="3" fill="none"/>
+    <!-- thick neck -->
+    <path d="M100 316 L160 316 L156 364 Q130 374 104 364 Z" fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- head: wide square jaw -->
+    <path d="M64 160 Q60 104 92 88 Q118 76 142 76 Q174 78 192 100 Q206 122 200 164
+             Q198 210 192 240 Q192 280 178 300 Q158 322 130 322 Q102 322 82 300
+             Q68 280 68 240 Q62 210 64 160 Z"
+          fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="6"/>
+    <!-- flat-top black hair with sheen -->
+    <path d="M60 148 Q58 92 92 80 Q118 66 148 70 Q182 74 196 98 Q206 116 202 150
+             Q198 120 178 106 Q150 88 116 92 Q80 98 68 130 Q62 140 60 148 Z"
+          fill="#1f1f1f" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M120 76 q22 -4 40 6 q-16 2 -24 8 q-8 -8 -16 -14" fill="#4a4a4a"/>
+    <!-- side shading -->
+    <path d="M188 112 Q204 160 194 216 Q192 258 180 292 Q196 268 198 220 Q206 150 190 116 Z" fill="rgba(80,40,10,.18)"/>
+    <!-- ears -->
+    <path d="M62 202 q-14 -2 -12 16 q2 20 18 22 q8 0 8 -9" fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M198 202 q14 -2 12 16 q-2 20 -18 22 q-8 0 -8 -9" fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- UNIBROW -->
+    <g class="browL"><path d="M78 182 Q130 164 182 182 L178 198 Q130 182 82 198 Z" fill="#1a1a1a" stroke="#1a1a1a" stroke-width="3"/></g>
+    <!-- close-set eyes -->
+    <ellipse cx="108" cy="212" rx="13" ry="11" fill="#fff" stroke="#1a1a1a" stroke-width="3.5"/>
+    <ellipse cx="152" cy="212" rx="13" ry="11" fill="#fff" stroke="#1a1a1a" stroke-width="3.5"/>
+    <circle cx="112" cy="214" r="5.5" fill="#111"/><circle cx="148" cy="214" r="5.5" fill="#111"/>
+    <!-- wide flat nose -->
+    <path d="M130 206 Q122 236 114 248 Q106 266 130 268 Q154 266 146 248 Q138 236 130 206 Z"
+          fill="url(#g-skin1)" stroke="#1a1a1a" stroke-width="5"/>
+    <ellipse cx="119" cy="260" rx="5" ry="3.5" fill="#7c4a20"/>
+    <ellipse cx="141" cy="260" rx="5" ry="3.5" fill="#7c4a20"/>
+    <!-- stubble field on jaw -->
+    <path d="M78 258 Q84 300 108 314 Q130 322 152 314 Q176 300 182 258 Q182 292 164 308 Q140 322 116 314 Q88 302 78 258 Z"
+          fill="rgba(40,30,20,.25)"/>
+    ${[[92,278],[102,292],[116,302],[130,306],[144,302],[158,292],[168,278],[100,268],[160,268],[130,296],[116,288],[144,288]]
+      .map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.8" fill="#2a2118"/>`).join("")}
+    <!-- mouths -->
+    <path class="m-neutral" d="M110 288 L150 288" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+    <g class="m-angry" style="display:none">
+      <path d="M104 284 Q130 276 156 284 Q152 302 130 304 Q108 302 104 284 Z" fill="#5c1f14" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M107 285 L153 285 L151 292 L109 292 Z" fill="#fff"/>
+      <path d="M112 298 L148 298" stroke="#fff" stroke-width="3"/>
+    </g>
+    <g class="m-happy" style="display:none">
+      <path d="M104 282 Q130 304 156 282 Q150 300 130 302 Q110 300 104 282 Z" fill="#7c2727" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M108 284 L152 284 L149 291 L111 291 Z" fill="#fff"/>
+    </g>
+    <!-- forehead crease -->
+    <path d="M96 160 Q130 152 164 160" stroke="#b9793e" stroke-width="3" fill="none"/>
+  </g>`;
+}
+
+/* ---------- 4: שירה — קפוצ'ון, קוקו, עיניים עייפות ---------- */
+function art_shira(){
+  return `
+  <g class="body">
+    <!-- hoodie -->
+    <path d="M26 470 Q30 380 80 360 L180 360 Q230 380 234 470 Z" fill="#2f5c4e" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M80 360 Q66 386 74 412 L98 404 Q92 380 96 362 Z" fill="#254a3e" stroke="#1a1a1a" stroke-width="4"/>
+    <path d="M180 360 Q194 386 186 412 L162 404 Q168 380 164 362 Z" fill="#254a3e" stroke="#1a1a1a" stroke-width="4"/>
+    <!-- hood bunched -->
+    <path d="M76 356 Q86 336 108 334 L152 334 Q174 336 184 356 Q160 376 130 376 Q100 376 76 356 Z"
+          fill="#254a3e" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M114 372 l-4 34 M146 372 l4 34" stroke="#e8e0c8" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="110" cy="410" r="5" fill="#e8e0c8" stroke="#1a1a1a" stroke-width="2.5"/>
+    <circle cx="150" cy="410" r="5" fill="#e8e0c8" stroke="#1a1a1a" stroke-width="2.5"/>
+    <!-- neck -->
+    <path d="M112 312 L148 312 L146 348 Q130 356 114 348 Z" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- head: long oval -->
+    <path d="M78 168 Q76 112 104 94 Q126 80 140 82 Q170 86 182 112 Q192 134 188 174
+             Q186 218 180 246 Q178 280 184 292 Q170 312 146 318 Q120 322 100 310
+             Q84 300 82 282 Q88 268 86 244 Q78 212 78 168 Z"
+          fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M174 118 Q190 162 182 220 Q178 260 184 290 Q168 306 150 314 Q170 290 168 246 Q178 178 166 126 Z" fill="rgba(90,50,10,.14)"/>
+    <!-- hair: side bangs + high ponytail -->
+    <path d="M74 160 Q68 100 106 84 Q134 70 162 84 Q192 100 190 152
+             Q182 118 158 106 Q168 128 162 150 Q150 116 122 110 Q94 108 86 138 Q78 150 74 160 Z"
+          fill="#5c3a1e" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M148 84 Q160 56 190 60 Q216 64 218 92 Q220 122 198 134 Q208 112 198 94 Q186 76 162 88 Q154 88 148 84 Z"
+          fill="#5c3a1e" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M196 100 q10 10 6 26" stroke="#3a2410" stroke-width="4" fill="none"/>
+    <path d="M100 92 q14 -8 30 -6" stroke="#7c552e" stroke-width="4" fill="none"/>
+    <!-- ears + hoops -->
+    <path d="M76 204 q-13 -2 -11 15 q2 18 16 20 q8 0 8 -8" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <circle cx="80" cy="248" r="10" fill="none" stroke="#d8a520" stroke-width="4"/>
+    <path d="M188 204 q13 -2 11 15 q-2 18 -16 20 q-8 0 -8 -8" fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="5"/>
+    <circle cx="184" cy="248" r="10" fill="none" stroke="#d8a520" stroke-width="4"/>
+    <!-- thin arched brows -->
+    <g class="browL"><path d="M92 184 q18 -12 38 -6" stroke="#3a2410" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    <g class="browR"><path d="M172 184 q-18 -12 -38 -6" stroke="#3a2410" stroke-width="5" fill="none" stroke-linecap="round"/></g>
+    <!-- big tired eyes -->
+    <ellipse cx="110" cy="206" rx="15" ry="12" fill="#fff" stroke="#1a1a1a" stroke-width="3.5"/>
+    <ellipse cx="154" cy="206" rx="15" ry="12" fill="#fff" stroke="#1a1a1a" stroke-width="3.5"/>
+    <circle cx="112" cy="208" r="6" fill="#4a2c14"/><circle cx="152" cy="208" r="6" fill="#4a2c14"/>
+    <circle cx="114" cy="206" r="2" fill="#fff"/><circle cx="154" cy="206" r="2" fill="#fff"/>
+    <path d="M96 222 q14 8 28 2 M140 224 q14 8 28 0" stroke="#b9885a" stroke-width="3" fill="none"/>
+    <!-- small nose -->
+    <path d="M132 210 Q128 240 122 250 Q120 260 132 261 Q142 260 138 250 Q136 240 134 210"
+          fill="url(#g-skin2)" stroke="#1a1a1a" stroke-width="4.5"/>
+    <ellipse cx="127" cy="255" rx="3" ry="2" fill="#a06a3a"/>
+    <!-- freckles -->
+    ${[[100,238],[108,244],[96,248],[164,238],[158,246],[168,246]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.7" fill="#c98a52"/>`).join("")}
+    <!-- mouths -->
+    <path class="m-neutral" d="M112 284 Q130 290 148 284" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+    <g class="m-angry" style="display:none">
+      <path d="M106 282 Q130 272 154 282 Q150 304 130 306 Q110 304 106 282 Z" fill="#5c1f14" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M110 283 L150 283 L148 290 L112 290 Z" fill="#fff"/>
+    </g>
+    <g class="m-happy" style="display:none">
+      <path d="M106 280 Q130 302 154 280 Q148 298 130 300 Q112 298 106 280 Z" fill="#7c2727" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M110 282 L150 282 L147 289 L113 289 Z" fill="#fff"/>
+    </g>
+  </g>`;
+}
+
+/* ---------- 5: אברם — קסקט, אף ענק, שרשרת זהב ---------- */
+function art_avram(){
+  return `
+  <g class="body">
+    <!-- polo -->
+    <path d="M18 470 Q22 374 76 356 L184 356 Q238 374 242 470 Z" fill="#7c9cb4" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M108 362 L130 396 L152 362" fill="#5c7c94" stroke="#1a1a1a" stroke-width="4"/>
+    <!-- gold chain -->
+    <path d="M104 366 Q130 396 156 366" fill="none" stroke="#e8c020" stroke-width="6"/>
+    <circle cx="130" cy="392" r="9" fill="#e8c020" stroke="#8a7410" stroke-width="3"/>
+    <!-- chest hair curls -->
+    <g stroke="#3a3a3a" stroke-width="2.5" fill="none">
+      <path d="M118 372 q4 -6 8 0 M134 376 q4 -6 8 0 M126 384 q4 -6 8 0"/>
+    </g>
+    <!-- long neck -->
+    <path d="M106 314 L154 314 L152 362 Q130 370 108 362 Z" fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M114 334 q6 10 4 22 M146 334 q-6 10 -4 22" stroke="#b9854a" stroke-width="3" fill="none"/>
+    <!-- head: long gaunt -->
+    <path d="M72 150 Q70 100 98 84 Q124 70 146 74 Q178 80 190 108 Q198 130 192 168
+             Q190 214 184 244 Q182 284 190 298 Q176 318 150 324 Q124 330 104 318
+             Q86 308 84 288 Q92 272 88 244 Q76 200 72 150 Z"
+          fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M180 116 Q196 164 186 224 Q184 266 190 296 Q174 312 154 320 Q176 294 174 248 Q184 178 172 122 Z" fill="rgba(70,35,8,.2)"/>
+    <!-- flat cap -->
+    <path d="M64 132 Q66 84 106 70 Q140 58 172 72 Q200 86 198 128 Q166 108 130 108 Q94 108 64 132 Z"
+          fill="#5c5248" stroke="#1a1a1a" stroke-width="6"/>
+    <path d="M64 132 Q100 112 134 112 Q170 112 198 128 L202 142 Q166 124 132 124 Q96 124 62 144 Z"
+          fill="#4a4238" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M88 90 l20 24 M120 78 l8 28 M152 78 l-4 28" stroke="#4a4238" stroke-width="3"/>
+    <!-- cap shadow on forehead -->
+    <path d="M66 144 Q130 120 196 142 L192 160 Q130 138 70 160 Z" fill="rgba(0,0,0,.16)"/>
+    <!-- ears -->
+    <path d="M68 196 q-15 -2 -13 17 q2 21 19 23 q9 0 9 -9" fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="5"/>
+    <path d="M194 196 q15 -2 13 17 q-2 21 -19 23 q-9 0 -9 -9" fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="5"/>
+    <!-- heavy-lidded eyes -->
+    <g class="browL"><path d="M84 178 q20 -12 42 -4 l-3 13 q-20 -6 -36 3 Z" fill="#3a342c" stroke="#1a1a1a" stroke-width="3.5"/></g>
+    <g class="browR"><path d="M180 178 q-20 -12 -42 -4 l3 13 q20 -6 36 3 Z" fill="#3a342c" stroke="#1a1a1a" stroke-width="3.5"/></g>
+    <path d="M92 200 q14 -8 30 0 l-2 8 q-14 -5 -26 0 Z" fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="3"/>
+    <path d="M172 200 q-14 -8 -30 0 l2 8 q14 -5 26 0 Z" fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="3"/>
+    <ellipse cx="108" cy="210" rx="11" ry="7" fill="#fff" stroke="#1a1a1a" stroke-width="3"/>
+    <ellipse cx="156" cy="210" rx="11" ry="7" fill="#fff" stroke="#1a1a1a" stroke-width="3"/>
+    <circle cx="110" cy="211" r="4.5" fill="#111"/><circle cx="154" cy="211" r="4.5" fill="#111"/>
+    <path d="M96 222 q12 7 24 2 M136 224 q12 7 24 0" stroke="#a06a38" stroke-width="3" fill="none"/>
+    <!-- HUGE hooked nose -->
+    <path d="M132 196 Q120 230 108 252 Q98 272 112 282 Q126 290 138 282 Q150 272 146 254 Q140 228 136 196 Z"
+          fill="url(#g-skin3)" stroke="#1a1a1a" stroke-width="5.5"/>
+    <path d="M108 254 q-4 12 6 22" stroke="rgba(70,35,8,.4)" stroke-width="4" fill="none"/>
+    <ellipse cx="116" cy="276" rx="4.5" ry="3" fill="#6e4018"/>
+    <ellipse cx="132" cy="278" rx="4.5" ry="3" fill="#6e4018"/>
+    <ellipse cx="116" cy="260" rx="6" ry="4" fill="#fff" opacity=".4"/>
+    <!-- grey stubble -->
+    <path d="M84 262 Q90 300 112 314 Q132 322 154 312 Q176 298 182 260 Q182 294 162 310 Q138 322 114 312 Q92 300 84 262 Z"
+          fill="rgba(120,120,115,.3)"/>
+    ${[[96,280],[106,294],[120,304],[136,306],[150,300],[162,288],[170,274],[104,272],[158,270],[130,298]]
+      .map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.8" fill="#6e6e68"/>`).join("")}
+    <!-- deep folds -->
+    <path d="M102 258 q-8 20 2 34 M162 258 q8 20 -2 34" stroke="#a06a38" stroke-width="3.5" fill="none"/>
+    <!-- mouths -->
+    <path class="m-neutral" d="M112 296 Q132 290 152 296" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+    <g class="m-angry" style="display:none">
+      <path d="M106 292 Q132 282 158 292 Q154 314 132 316 Q110 314 106 292 Z" fill="#5c1f14" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M110 293 L154 293 L152 300 L112 300 Z" fill="#fff"/>
+      <rect x="138" y="293" width="9" height="8" fill="#e8c020"/>
+    </g>
+    <g class="m-happy" style="display:none">
+      <path d="M108 290 Q132 310 156 290 Q150 308 132 310 Q114 308 108 290 Z" fill="#7c2727" stroke="#1a1a1a" stroke-width="4"/>
+      <path d="M112 292 L152 292 L149 299 L115 299 Z" fill="#fff"/>
+      <rect x="137" y="292" width="8" height="7" fill="#e8c020"/>
+    </g>
+  </g>`;
+}
+
+const CAST = [
+  {id:"yosef", name:"סבא יוסף", art:art_yosef},
+  {id:"rivka", name:"סבתא רבקה", art:art_rivka},
+  {id:"moti",  name:"מוטי",      art:art_moti},
+  {id:"shira", name:"שירה",      art:art_shira},
+  {id:"avram", name:"אברם",      art:art_avram}
+];
+
+/* =====================================================
+   GAME STATE
+   ===================================================== */
+let QX = [688, 452, 226];  /* queue x positions, front first */
+let QY = 90;
+const QSCALE = 1;
+
+let S=null, loopTimer=null;
+
+function newState(){
+  return {
+    score:0, meals:0, level:1,
+    holding:false, plate:{soup:0,rice:0,patty:0,salad:0},
+    trays:{soup:100,rice:100,patty:100,salad:100},
+    flies:{}, queue:[], refilling:false,
+    cassetteReady:false, nextCassette:100,
+    over:false, paused:false, t:0, spawnCooldown:0
+  };
+}
+const levelOf = sc => 1+Math.floor(sc/120);
+const patienceRate = () => 2.2 + S.level*1.0;
+const spawnDelay = () => Math.max(1.4, 6.0 - S.level*0.55);
+
+function makeOrder(){
+  const maxItems = Math.min(2+Math.floor(S.level/2), 6);
+  const n = 1+Math.floor(Math.random()*maxItems);
+  const o={soup:0,rice:0,patty:0,salad:0};
+  for(let i=0;i<n;i++) o[FKEYS[Math.floor(Math.random()*4)]]++;
+  return o;
+}
+function spawnPool(){
+  /* אם יש תמונות דמויות — משחקים רק איתן; אחרת הקאסט המצויר */
+  const withImg = [];
+  for(let i=1;i<=MAX_CHARS;i++){
+    if(charHref(i,"neutral")) withImg.push({
+      id:"img"+i, imgIdx:i,
+      name: CHAR_NAMES[i-1] || (CAST[i-1] && CAST[i-1].name) || ("אורח "+i)
+    });
+  }
+  return withImg.length ? withImg : CAST;
+}
+function makeCustomer(){
+  const pool = spawnPool();
+  const used = S.queue.map(c=>c.cast.id);
+  let avail = pool.filter(c=>!used.includes(c.id));
+  if(!avail.length) avail = pool; /* מאגר קטן — מותר כפולים */
+  const cast = avail[Math.floor(Math.random()*avail.length)];
+  return {cast, order:makeOrder(), patience:0, served:false, el:null};
+}
+
+/* =====================================================
+   BUILD + RENDER
+   ===================================================== */
+function buildGameScreen(){
+  const svg = $("#gameSvg");
+  svg.innerHTML = DEFS + bgArt() +
+    `<g id="queueG"></g>` + workerArt() + counterArt() + handArt() + hudArt();
+
+  FKEYS.forEach(k=>{
+    svg.querySelector(`#tray-${k}`).addEventListener("pointerdown", ()=>clickTray(k));
+  });
+  svg.querySelector("#platesG").addEventListener("pointerdown", clickPlate);
+  svg.querySelector("#sprayG").addEventListener("pointerdown", clickSpray);
+  svg.querySelector("#workerG").addEventListener("pointerdown", clickWorker);
+  svg.querySelector("#musicBtn").addEventListener("pointerdown", clickCassette);
+  svg.querySelector("#pauseBtn").addEventListener("pointerdown", togglePause);
+  svg.querySelector("#soundBtn").addEventListener("pointerdown", toggleSound);
+  renderHand(); renderHUD(); FKEYS.forEach(renderTray);
+  if(ASSETS.checked) applyAssets();
+  else checkAssets().then(applyAssets);
+}
+
+function addCustomerEl(cust, slot){
+  const g = document.createElementNS(SVGNS,"g");
+  g.setAttribute("class","cust clickable");
+  /* נכנס מהדלת ומחליק למקום בתור */
+  g.style.transform = `translate(860px, ${QY}px) scale(${QSCALE})`;
+  g.style.opacity = 0;
+  const idx = cust.cast.imgIdx || CAST.indexOf(cust.cast)+1;
+  const href = charHref(idx,"neutral");
+  const bodyHtml = href
+    ? `<g class="body"><image class="charImg" data-idx="${idx}" href="${href}" ${charPlacement(idx)}/></g>`
+    : cust.cast.art();
+  g.innerHTML = bodyHtml + meterArt(METER_CX) + bubbleArt(METER_CX) +
+    `<g class="frontArrow" style="display:none" transform="translate(0 ${ARROW_DY})">
+       <g class="arrowBob"><path d="M34 -58 L66 -58 L66 -36 L80 -36 L50 -4 L20 -36 L34 -36 Z"
+          fill="#f2d24b" stroke="#1a1a1a" stroke-width="4"/></g>
+     </g>`;
+  g.addEventListener("pointerdown", ()=>clickCustomer(cust));
+  cust.el = g;
+  $("#queueG").appendChild(g);
+  g.getBoundingClientRect(); /* reflow, שהמעבר מהדלת יונפש */
+  g.style.opacity = 1;
+}
+
+function renderQueue(){
+  S.queue.forEach((c,i)=>{
+    c.el.style.transform = `translate(${QX[i]}px, ${QY}px) scale(${QSCALE})`;
+    c.el.querySelector(".frontArrow").style.display = (i===0 && !c.served) ? "" : "none";
+  });
+  renderFlags();
+}
+
+function renderCustomer(cust){
+  const el = cust.el; if(!el) return;
+  el.querySelector(".mfill").setAttribute("height", Math.round(cust.patience*0.94));
+  el.querySelector(".mfill").setAttribute("y", 94 - Math.round(cust.patience*0.94));
+  const angry = cust.patience>62, mid = cust.patience>34;
+  const charImg = el.querySelector(".charImg");
+  if(charImg){
+    const idx = charImg.dataset.idx;
+    const state = cust.served ? "happy" : angry ? "angry" : "neutral";
+    const href = charHrefSafe(idx, state);
+    if(href && charImg.getAttribute("href")!==href) charImg.setAttribute("href", href);
+  } else {
+    el.querySelector(".m-neutral").style.display = (!angry && !cust.served)? "":"none";
+    el.querySelector(".m-angry").style.display   = (angry && !cust.served)? "":"none";
+    el.querySelector(".m-happy").style.display   = cust.served? "":"none";
+    const bl = el.querySelector(".browL"), br = el.querySelector(".browR");
+    if(br){
+      if(bl) bl.style.transform = angry? "rotate(16deg)": mid? "rotate(8deg)":"";
+      br.style.transform = angry? "rotate(-16deg)": mid? "rotate(-8deg)":"";
+    } else if(bl){
+      /* unibrow: drop it instead of rotating */
+      bl.style.transform = angry? "translateY(10px)": mid? "translateY(5px)":"";
+    }
+  }
+  el.querySelector(".body").setAttribute("transform",
+    angry? `translate(${(Math.sin(S.t*20)*4).toFixed(1)} 0)` : "");
+  if(angry && !cust.served){
+    const sh = el.querySelector(".shout");
+    if(sh.style.display==="none" && Math.random()<0.018){
+      sh.querySelector(".shoutTxt").textContent =
+        ["נו כבר!","אני מת מרעב!","יש שם מישהו?!","המרק מתקרר!","יאללה!!"][Math.floor(Math.random()*5)];
+      sh.style.display="";
+      setTimeout(()=>{ sh.style.display="none"; },1700);
+    }
+  }
+}
+
+function renderOrderBoard(){
+  const board = $("#orderBoard"); if(!board) return;
+  const front = S.queue[0];
+  if(!front || front.served){ board.style.display="none"; return; }
+  board.style.display="";
+  $("#obTitle").textContent = `ההזמנה של ${front.cast.name}`;
+  const rows = FKEYS.filter(k=>front.order[k]>0);
+  $("#obRows").innerHTML = rows
+    .map((k,i)=>orderRowArt(k, front.order[k]-S.plate[k], i)).join("");
+  /* הרצועה מתכווצת לפי מספר הצ'יפים */
+  const w = Math.max(300, 30 + rows.length*144);
+  const x = 984 - w;
+  board.querySelectorAll("rect").forEach(r=>{ r.setAttribute("x", x); r.setAttribute("width", w); });
+}
+
+function renderFlags(){
+  renderOrderBoard();
+  const front = S.queue[0];
+  FKEYS.forEach(k=>{
+    const badge = $(`#tray-${k} .cntBadge`);
+    if(!badge) return;
+    if(!front || front.served || front.order[k]===0){ badge.style.display="none"; return; }
+    badge.style.display="";
+    const remaining = front.order[k] - S.plate[k];
+    const num = badge.querySelector(".fnum");
+    if(remaining<=0){
+      num.textContent = "✓";
+      num.setAttribute("fill", "#3f9b1e");
+    } else {
+      num.textContent = remaining;
+      num.setAttribute("fill", "#c9231a");
+    }
+  });
+}
+
+function renderTray(k){
+  const g = $(`#tray-${k}`);
+  const pct = Math.max(0, Math.round(S.trays[k]));
+  const fill = g.querySelector(".stockFill");
+  if(fill){
+    fill.setAttribute("width", Math.max(0, 88*pct/100).toFixed(1));
+    fill.setAttribute("fill", pct>50 ? "#3f9b1e" : pct>20 ? "#e8952f" : "#c9231a");
+  }
+  const food = g.querySelector(".trayFood");
+  if(food) food.style.opacity = S.trays[k]>0 ? Math.max(.3,S.trays[k]/100) : .12;
+  const had = g.querySelector(".flyG");
+  if(S.flies[k] && !had){
+    const f = document.createElementNS(SVGNS,"g");
+    f.setAttribute("class","flyG");
+    f.setAttribute("transform",`translate(${-40+Math.random()*80} ${-10+Math.random()*20})`);
+    f.innerHTML = `
+      <ellipse cx="0" cy="6" rx="11" ry="7" fill="#22221e" stroke="#111" stroke-width="2"/>
+      <circle cx="-9" cy="1" r="5" fill="#111"/>
+      <ellipse cx="-6" cy="-6" rx="9" ry="5" fill="rgba(205,225,255,.85)" stroke="#556" stroke-width="1.5" transform="rotate(-16 -6 -6)"/>
+      <ellipse cx="8" cy="-7" rx="9" ry="5" fill="rgba(205,225,255,.85)" stroke="#556" stroke-width="1.5" transform="rotate(14 8 -7)"/>`;
+    g.appendChild(f);
+  } else if(!S.flies[k] && had) had.remove();
+}
+
+const PLATE_POS = [[-70,-6],[-24,-14],[24,-10],[70,-4],[-48,10],[0,8],[48,12],[0,-24]];
+function renderHand(){
+  const g = $("#handG"); if(!g) return;
+  g.querySelector(".armNoPlate").style.display = S.holding? "none":"";
+  g.querySelector(".armPlate").style.display = S.holding? "":"none";
+  if(S.holding){
+    let items=[], html="";
+    FKEYS.forEach(k=>{ for(let i=0;i<S.plate[k];i++) items.push(k); });
+    items.forEach((k,i)=>{ if(i<8) html += plateItem(k, PLATE_POS[i][0], PLATE_POS[i][1]); });
+    $("#plateItemsG").innerHTML = html;
+  }
+}
+
+function renderHUD(){
+  $("#scoreVal").textContent = S.score;
+  const mb = $("#musicBtn");
+  mb.classList.toggle("pulseBtn", S.cassetteReady);
+  mb.style.opacity = S.cassetteReady? 1 : .6;
+  const hint = $("#musicHint");
+  if(hint) hint.textContent = S.cassetteReady ? "מוכן!" : `עוד ${Math.max(1, S.nextCassette - S.score)}`;
+  const sb = $("#soundBtn");
+  if(sb){
+    $("#sndWaves").style.display = SFX_ON? "":"none";
+    $("#sndMute").style.display  = SFX_ON? "none":"";
+    sb.style.opacity = SFX_ON? 1 : .6;
+  }
+}
+
+function toggleSound(){
+  SFX_ON = !SFX_ON;
+  if(!SFX_ON) stopBGM();
+  else if(S && !S.over && !S.paused) startBGM();
+  renderHUD();
+}
+
+let toastTimer=null;
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("on"),1400);
+}
+
+/* =====================================================
+   ACTIONS
+   ===================================================== */
+function clickPlate(){
+  if(S.over||S.paused) return;
+  if(S.holding){ toast("כבר יש לך צלחת ביד"); return; }
+  S.holding=true; S.plate={soup:0,rice:0,patty:0,salad:0};
+  sndTake(); renderHand(); renderFlags();
+}
+
+function clickTray(k){
+  if(S.over||S.paused) return;
+  const front=S.queue[0];
+  if(!S.holding){ toast("קודם קח צלחת!"); sndBad(); return; }
+  if(!front || front.served){ toast("אין כרגע הזמנה"); return; }
+  if(S.flies[k]){ toast("איכס, זבוב! תרסס קודם"); sndBad(); return; }
+  if(S.trays[k]<=0){ toast(`נגמר ה${FOODS[k].name}! תקרא לשמעון`); sndBad(); return; }
+  const total = FKEYS.reduce((s,key)=>s+S.plate[key],0);
+  if(total>=8){ toast("הצלחת מלאה!"); sndBad(); return; }
+  /* מותר לטעות: אפשר להוסיף גם מה שלא הוזמן. האורח כבר יגיד את שלו */
+  S.plate[k]++; S.trays[k]=Math.max(0,S.trays[k]-9);
+  sndAdd(); renderTray(k); renderHand(); renderFlags();
+}
+
+function clickWorker(){
+  if(S.over||S.paused||S.refilling) return;
+  S.refilling=true;
+  $("#workerBubble").style.display="";
+  beep(380,.1,"triangle");
+  setTimeout(()=>{
+    FKEYS.forEach(k=>{S.trays[k]=100; renderTray(k);});
+    S.refilling=false;
+    $("#workerBubble").style.display="none";
+    toast("שמעון מילא את המגשים!");
+    beep(700,.1,"triangle");
+  },1600);
+}
+
+function clickSpray(){
+  if(S.over||S.paused) return;
+  const had=Object.keys(S.flies).length>0;
+  S.flies={}; FKEYS.forEach(renderTray); sndSpray();
+  if(had) toast("פסססס! הזבובים ברחו");
+}
+
+function clickCassette(){
+  if(S.over||S.paused) return;
+  if(!S.cassetteReady){
+    /* לא נעול בשקט: אומרים לשחקן כמה חסר */
+    toast(`הטייפ עוד לא טעון. עוד ${Math.max(1, S.nextCassette - S.score)} נקודות`);
+    sndBad(); return;
+  }
+  S.cassetteReady=false; S.nextCassette=S.score+100;
+  S.queue.forEach(c=>c.patience=Math.max(0,c.patience-70));
+  $("#musicNotes").style.display="";
+  setTimeout(()=>$("#musicNotes").style.display="none",2300);
+  sndMusic(); toast("להיט על הטייפ! כולם נרגעים");
+  S.queue.forEach(renderCustomer); renderHUD();
+}
+
+function togglePause(){
+  if(S.over) return;
+  S.paused=!S.paused;
+  $("#pauseOverlay").classList.toggle("on",S.paused);
+  pauseBGM(S.paused);
+  beep(S.paused?300:500,.08,"triangle");
+}
+
+function orderComplete(front){
+  return FKEYS.every(k=>S.plate[k]===front.order[k]);
+}
+
+function clickCustomer(cust){
+  if(S.over||S.paused||cust.served) return;
+  const idx=S.queue.indexOf(cust);
+  if(idx!==0){ toast(`${cust.cast.name} עוד מחכה בתור`); return; }
+  if(!S.holding){ toast("אין לך צלחת ביד"); sndBad(); return; }
+  if(!orderComplete(cust)){
+    const over = FKEYS.some(k=>S.plate[k]>cust.order[k]);
+    if(over){
+      /* צלחת שגויה: האורח זורק אותה והסבלנות קופצת */
+      S.holding=false; S.plate={soup:0,rice:0,patty:0,salad:0};
+      cust.patience = Math.min(99, cust.patience+12);
+      toast(`${cust.cast.name}: זה לא מה שביקשתי! הצלחת נזרקה`);
+      renderHand(); renderFlags();
+    } else {
+      cust.patience = Math.min(99, cust.patience+5);
+      toast("חסר בצלחת. תשלים את ההזמנה");
+    }
+    sndBad();
+    renderCustomer(cust);
+    return;
+  }
+  const items=FKEYS.reduce((s,k)=>s+cust.order[k],0);
+  const bonus=cust.patience<30?10:0;
+  const pts=10+items*5+bonus;
+  S.score+=pts; S.meals++; S.level=levelOf(S.score);
+  S.holding=false; S.plate={soup:0,rice:0,patty:0,salad:0};
+  cust.served=true;
+  sndServe(); toast(`בתיאבון, ${cust.cast.name}! ‎+${pts}`);
+  renderHand(); renderCustomer(cust); renderHUD(); renderFlags();
+  if(!S.cassetteReady && S.score>=S.nextCassette){ S.cassetteReady=true; renderHUD(); }
+  /* יציאה שמחה דרך דלת המטבח */
+  setTimeout(()=>{
+    if(S.over || !cust.el) return;
+    cust.el.style.transform = `translate(880px, ${QY}px) scale(${QSCALE})`;
+    cust.el.style.opacity = 0;
+  },500);
+  setTimeout(()=>{
+    if(S.over) return;
+    const i=S.queue.indexOf(cust);
+    if(i>-1){ S.queue.splice(i,1); cust.el.remove(); renderQueue(); }
+  },1050);
+}
+
+/* =====================================================
+   LOOP
+   ===================================================== */
+function tick(dt){
+  if(S.paused) return;
+  S.t+=dt;
+  S.spawnCooldown-=dt;
+  if(S.queue.length<3 && S.spawnCooldown<=0){
+    const c=makeCustomer();
+    if(c){
+      S.queue.push(c);
+      addCustomerEl(c,S.queue.length-1);
+      renderQueue();
+      S.spawnCooldown=spawnDelay();
+      beep(300,.06,"triangle",.06);
+    }
+  }
+  for(const c of S.queue){
+    if(c.served) continue;
+    c.patience+=patienceRate()*dt;
+    if(c.patience>=100) return gameOver(c);
+    renderCustomer(c);
+  }
+  if(Math.random()<dt*0.085*(1+S.level*0.15)){
+    const k=FKEYS[Math.floor(Math.random()*4)];
+    if(!S.flies[k]){ S.flies[k]=true; renderTray(k); }
+  }
+}
+
+/* מוזיקת רקע מקובץ. נעצרת בהשהיה ובסוף משמרת. */
+let bgmTimer=null;   /* נשמר לתאימות עם קוד קיים */
+let bgmAudio=null;
+function ensureBGM(){
+  if(bgmAudio) return bgmAudio;
+  bgmAudio = new Audio(A("bgm.mp3"));
+  bgmAudio.loop = true;
+  bgmAudio.volume = 0.32;
+  bgmAudio.addEventListener("error", ()=>{ bgmAudio = null; });
+  return bgmAudio;
+}
+function startBGM(){
+  if(!BGM_ON || !SFX_ON){ stopBGM(); return; }
+  const a = ensureBGM(); if(!a) return;
+  a.currentTime = 0;
+  a.play().catch(()=>{});   /* דפדפן חוסם ניגון בלי מגע? יתחיל בלחיצה הבאה */
+}
+function stopBGM(){ if(bgmAudio){ bgmAudio.pause(); } }
+function pauseBGM(p){ if(!bgmAudio) return; if(p) bgmAudio.pause(); else if(BGM_ON && SFX_ON) bgmAudio.play().catch(()=>{}); }
+
+function startLoop(){
+  let last=performance.now();
+  cancelAnimationFrame(loopTimer);
+  const step=now=>{
+    const dt=Math.min(.05,(now-last)/1000); last=now;
+    if(!S.over){ tick(dt); loopTimer=requestAnimationFrame(step); }
+  };
+  loopTimer=requestAnimationFrame(step);
+}
+
+const HS_KEY="tamhui-high";
+function highScore(){
+  /* localStorage יכול להיזרק בדפדפן שחוסם אחסון */
+  try{ return +(localStorage.getItem(HS_KEY)||0); }catch(e){ return 0; }
+}
+
+function gameOver(cust){
+  S.over=true; stopBGM(); sndOver();
+  $("#overReason").textContent=`נגמרה הסבלנות של ${cust.cast.name}. בבית תמחוי אף אחד לא אמור לצאת רעב.`;
+  $("#overScore").textContent=S.score;
+  let line=`הגשת ${S.meals} מנות חמות במשמרת הזו.`;
+  if(S.score>highScore()){
+    try{ localStorage.setItem(HS_KEY, S.score); }catch(e){}
+    line+=" שיא חדש!";
+  } else if(highScore()>0){
+    line+=` השיא שלך: ${highScore()}.`;
+  }
+  $("#overMeals").textContent=line;
+  show("overScreen");
+}
+
+/* =====================================================
+   SCREENS
+   ===================================================== */
+function show(id){
+  $$(".scr").forEach(e=>e.classList.remove("on"));
+  $("#"+id).classList.add("on");
+  if(id==="overScreen") $("#gameScreen").classList.add("on");
+  if(id==="titleScreen"){
+    $("#hsText").textContent = highScore()>0 ? `השיא שלך: ${highScore()}` : "";
+  }
+}
+function startGame(){
+  S=newState();
+  buildGameScreen();
+  show("gameScreen");
+  S.spawnCooldown=.5;
+  startLoop();
+  startBGM();
+}
+
+checkAssets(); /* טוען תמונות מ-assets/ ברקע, אם קיימות */
+$("#hsText").textContent = highScore()>0 ? `השיא שלך: ${highScore()}` : "";
+$("#btnStart").addEventListener("pointerdown",()=>{beep(600,.08);startGame();});
+$("#btnHow").addEventListener("pointerdown",()=>show("howtoScreen"));
+$("#btnBack").addEventListener("pointerdown",()=>show("titleScreen"));
+$("#btnAgain").addEventListener("pointerdown",()=>startGame());
+$("#btnHome").addEventListener("pointerdown",()=>show("titleScreen"));
+</script>
+</body>
+</html>

@@ -69,6 +69,7 @@
   .flyG{transform-box:fill-box;transform-origin:center;animation:buzz .3s infinite alternate;}
   @keyframes buzz{from{transform:translate(0,0) rotate(-9deg);}to{transform:translate(4px,-4px) rotate(9deg);}}
   .arrowBob{transform-box:fill-box;transform-origin:center;animation:bob .7s infinite alternate;}
+  .doorPulse{transform-box:fill-box;transform-origin:center;animation:pulse 1s infinite;}
   @keyframes bob{from{transform:translateY(0);}to{transform:translateY(10px);}}
   .steam{transform-box:fill-box;transform-origin:center;animation:steamUp 2.4s linear infinite;}
   @keyframes steamUp{0%{transform:translateY(0);opacity:.75;}100%{transform:translateY(-26px);opacity:0;}}
@@ -149,8 +150,8 @@
       <text x="325" y="256" text-anchor="middle" font-family="Secular One, sans-serif"
             font-size="18" fill="#b9cdf0">מנהלים את בית התמחוי של הסניף. התור ארוך והמצלמות דולקות</text>
 
-      <text id="hsText" x="325" y="296" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
-            font-size="24" fill="#ffe488"></text>
+      <text id="hsText" x="325" y="284" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
+            font-size="21" fill="#ffe488"></text>
 
       <!-- פס תחתון -->
       <rect x="0" y="481" width="650" height="9" fill="url(#t-gold)"/>
@@ -167,14 +168,14 @@
   <div class="scr" id="howtoScreen">
     <h2>איך משחקים?</h2>
     <ul>
-      <li>האורח הראשון בתור (עם <b>החץ הצהוב</b>) מזמין. <b>הדגלונים על הדלפק</b> מראים כמה נשאר להוסיף מכל דבר.</li>
-      <li>קח צלחת מ<b>ערימת הצלחות</b>, לחץ על המגשים כדי למלא, וכשהכול על 0 לחץ על האורח והגש.</li>
-      <li>זהירות: מנה שלא הוזמנה הורסת את הצלחת. אורח שמקבל צלחת שגויה זורק אותה, והסבלנות שלו קופצת.</li>
-      <li>המגשים מתרוקנים. לחץ על <b>דלת המטבח</b> ושמעון ימלא אותם.</li>
-      <li>נחת <b>זבוב</b> על מגש? הוא נעול עד שתרסס עם הספריי הכחול.</li>
-      <li>לכל אורח יש <b>מד סבלנות</b>. מד שמתמלא עד הסוף = המשמרת נגמרת.</li>
-      <li>כל 100 נקודות נטען <b>כפתור המוזיקה</b>. להיט אחד טוב מרגיע את כל התור.</li>
-      <li>כפתור <b>ההשהיה</b> למעלה עוצר את המשחק.</li>
+      <li>המצביע עם <b>החץ הצהוב</b> מזמין. ההזמנה שלו מופיעה ב<b>לוח למטה מימין</b> וגם כמספר אדום על שלט כל מגש.</li>
+      <li>קח צלחת מ<b>ערימת הצלחות</b>, לחץ על המגשים כדי למלא, וכשכל השלטים מסומנים ב-V לחץ על המצביע והגש.</li>
+      <li>זהירות: מנה שלא הוזמנה הורסת את הצלחת. מצביע שמקבל צלחת שגויה זורק אותה, והסבלנות שלו קופצת.</li>
+      <li>המגשים מתרוקנים, תעקוב אחרי הפס הירוק. כשדלת <b>המטבח</b> פועמת בזהב, לחץ עליה ושמעון ימלא.</li>
+      <li>נחת <b>זבוב</b> על מגש? המגש נעול עד שתלחץ על הספריי הכחול.</li>
+      <li>לכל מצביע יש <b>מד סבלנות</b> מעל הראש. מד שמתמלא עד הסוף = הקמפיין נגמר.</li>
+      <li>כל 100 קולות נטען <b>כפתור המוזיקה</b>. להיט אחד טוב מרגיע את כל התור.</li>
+      <li>כפתור <b>ההשהיה</b> עוצר, כפתור <b>הרמקול</b> משתיק.</li>
     </ul>
     <div class="menuBtn" id="btnBack" style="margin-top:12px;">חזרה</div>
   </div>
@@ -307,7 +308,7 @@ const ASSETS = { loaded:{}, url:{}, charURL:{}, charFit:{}, checked:false };
 /* גובה הגוף הרצוי במשחק. כל דמות מוקטנת או מוגדלת אליו,
    כך שכולן יוצאות באותו גודל גם אם ציירת אותן אחרת. */
 const CHAR_TARGET_H = 300;
-const CHAR_SINK = 34; /* כמה התחתית נכנסת מתחת לקו הדלפק */
+const CHAR_SINK = 48; /* כמה התחתית נכנסת מתחת לקו הדלפק */
 /* עוקף קאש: כל רענון מושך את הקבצים מחדש, שתמונה חדשה תיכנס מיד */
 const CB = "?t=" + Date.now();
 const A = name => "assets/" + name + CB;
@@ -496,9 +497,9 @@ async function loadStrip(n){
      שומרים את התמונות כמו שהן, ורק מודדים איפה הגוף מתחיל ונגמר.
      המדידה היא מה שמאפשר לתת לכל הדמויות אותו גודל אמיתי,
      ולהצמיד את תחתית הגוף מתחת לדלפק כדי שקצה החיתוך ייבלע. */
+  const boxes = cells.map(cv=>contentBox(cv)).filter(Boolean);
   let box = null;
-  cells.forEach(cv=>{
-    const b = contentBox(cv); if(!b) return;
+  boxes.forEach(b=>{
     box = box ? {
       x: Math.min(box.x, b.x), y: Math.min(box.y, b.y),
       r: Math.max(box.r, b.x+b.w), bt: Math.max(box.bt, b.y+b.h)
@@ -508,11 +509,15 @@ async function loadStrip(n){
     ASSETS.charURL[`${n}-${states[i]}`] = cv.toDataURL("image/png");
   });
   if(box){
+    /* תחתית "מינימלית": התא שבו הגוף נגמר הכי גבוה. לפי זה מעגנים,
+       שגם בהבעה הקצרה ביותר קצה החיתוך יישאר מתחת לדלפק. */
+    const bottomMin = Math.min(...boxes.map(b=>b.y+b.h));
     ASSETS.charFit[n] = {
       cw: Math.round(cw), ch: Math.round(ch),
       cx: (box.x + box.r)/2 / cw,        /* מרכז הגוף, כשבר מרוחב התא */
       top: box.y / ch,                    /* ראש */
       bottom: box.bt / ch,                /* תחתית הגוף */
+      bottomMin: bottomMin / ch,          /* התחתית הגבוהה מבין ההבעות */
       hFrac: (box.bt - box.y) / ch        /* גובה הגוף כשבר */
     };
   }
@@ -548,18 +553,22 @@ function charHrefSafe(idx,state){
   return charHref(idx,state) || charHref(idx,"neutral");
 }
 
-/* מיקום וגודל של דמות: אותו גובה גוף לכולן, תחתית מתחת לדלפק.
-   מוחזר כמחרוזת אטריביוטים ל-image. */
-function charPlacement(idx){
+/* מיקום וגודל של דמות: אותו גובה גוף לכולן, תחתית מתחת לדלפק. */
+function charPlaceObj(idx){
   const f = ASSETS.charFit[idx];
-  if(!f) return `x="${CHAR_BOX.x}" y="0" width="${CHAR_BOX.w}" height="${CHAR_BOX.h}" preserveAspectRatio="xMidYMax meet"`;
+  if(!f) return null;
   const scale = CHAR_TARGET_H / (f.hFrac * f.ch);   /* גובה גוף אחיד */
   const w = f.cw * scale, h = f.ch * scale;
-  /* תחתית הגוף יורדת אל מתחת לקו הדלפק */
-  const y = (COUNTER_Y + CHAR_SINK) - f.bottom * h - QY;
-  /* מרכז הגוף מתיישר למרכז המשבצת */
+  /* גם ההבעה שמסתיימת הכי גבוה יורדת אל מתחת לקו הדלפק */
+  const anchor = (f.bottomMin !== undefined) ? f.bottomMin : f.bottom;
+  const y = (COUNTER_Y + CHAR_SINK) - anchor * h - QY;
   const x = (CHAR_BOX.w/2) - f.cx * w;
-  return `x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="none"`;
+  return {x, y, w, h, f};
+}
+function charPlacement(idx){
+  const p = charPlaceObj(idx);
+  if(!p) return `x="${CHAR_BOX.x}" y="0" width="${CHAR_BOX.w}" height="${CHAR_BOX.h}" preserveAspectRatio="xMidYMax meet"`;
+  return `x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" width="${p.w.toFixed(1)}" height="${p.h.toFixed(1)}" preserveAspectRatio="none"`;
 }
 
 /* מזהה את קו הדלפק ברקע: הקצה האופקי החזק ביותר ברצועת הגובה הסבירה,
@@ -653,7 +662,19 @@ function applyAssets(){
     if(worker){
       worker.setAttribute("transform","translate(800 92)");
       const hit = worker.querySelector(".hit");
-      if(hit){ hit.setAttribute("width","82"); hit.setAttribute("height","300"); }
+      if(hit){ hit.setAttribute("width","96"); hit.setAttribute("height","310"); }
+      /* שלט "מטבח" על הדלת + מסגרת שפועמת כשמגש מתרוקן */
+      if(!worker.querySelector(".doorSign")){
+        const ds = document.createElementNS(SVGNS,"g");
+        ds.setAttribute("class","doorSign");
+        ds.innerHTML = `
+          <rect class="doorPulse" x="-4" y="-4" width="102" height="318" rx="10" fill="none" stroke="#e8b62c" stroke-width="5" style="display:none"/>
+          <g transform="translate(48 -14)">
+            <rect x="-56" y="-22" width="112" height="32" rx="9" fill="#08286a" stroke="#e8b62c" stroke-width="2.5"/>
+            <text x="0" y="2" text-anchor="middle" font-size="19" fill="#ffe488">מטבח · שמעון</text>
+          </g>`;
+        worker.appendChild(ds);
+      }
     }
     const spray = svg.querySelector("#sprayG");
     if(spray) spray.setAttribute("transform","translate(778 462)");
@@ -671,17 +692,20 @@ function applyAssets(){
           <text x="0" y="0" text-anchor="middle" font-family="Suez One" font-size="22" fill="#2a5fa8">ביחד מאכילים את כולם</text>
           <path d="M0 8 c0 -7 10 -7 10 0 c0 5 -10 12 -10 12 c0 0 -10 -7 -10 -12 c0 -7 10 -7 10 0" fill="#d43f2a" transform="translate(0 10)"/>
         </g>
-        <g transform="translate(352 84)">
-          <text x="0" y="-14" text-anchor="middle" font-family="Suez One" font-size="17" fill="#7a4a1d">התפריט</text>
-          <text x="0" y="8" text-anchor="middle" font-family="Secular One" font-size="14" fill="#444">מרק · אורז</text>
-          <text x="0" y="28" text-anchor="middle" font-family="Secular One" font-size="14" fill="#444">קציצות · סלט</text>
+        <g transform="translate(387 122)">
+          <text x="0" y="-14" text-anchor="middle" font-size="18" fill="#7a4a1d">התפריט</text>
+          <text x="0" y="8" text-anchor="middle" font-size="15" fill="#444">מרק · אורז</text>
+          <text x="0" y="28" text-anchor="middle" font-size="15" fill="#444">קציצות · סלט</text>
         </g>
         `;
       svg.insertBefore(patches, svg.querySelector("#queueG"));
       /* כיסוי דגלוני המספרים הסטטיים שעל הדלפק */
       const covers = document.createElementNS(SVGNS,"g");
       covers.setAttribute("class","assetBg");
-      covers.innerHTML = "";
+      /* השלטים הלבנים הריקים שמצוירים ברקע הופכים לשלטי לב של המקום */
+      covers.innerHTML = [[65,576],[276,592],[470,589],[676,586]]
+        .map(([x,y])=>`<path d="M0 -3 c0 -8 11 -8 11 0 c0 6 -11 13 -11 13 c0 0 -11 -7 -11 -13 c0 -8 11 -8 11 0"
+          fill="#d43f2a" transform="translate(${x} ${y})"/>`).join("");
       const firstTrayEl = svg.querySelector("#tray-soup");
       firstTrayEl.parentNode.insertBefore(covers, firstTrayEl);
     }
@@ -781,17 +805,18 @@ function bgArt(){
 function hudArt(){
   return `
   <g id="scoreSignG" transform="rotate(-1 150 80)">
-    <rect x="28" y="28" width="240" height="104" rx="4" fill="#f5ecc9" stroke="#1a1a1a" stroke-width="8"/>
-    <rect x="40" y="40" width="216" height="80" rx="3" fill="none" stroke="#c9bd8a" stroke-width="3"/>
-    <text id="scoreVal" x="148" y="102" text-anchor="middle" font-family="Suez One" font-size="58" fill="#111">0</text>
+    <rect x="28" y="28" width="240" height="104" rx="8" fill="#08286a" stroke="#e8b62c" stroke-width="5"/>
+    <rect x="36" y="36" width="224" height="88" rx="5" fill="none" stroke="#3a5fa8" stroke-width="2"/>
+    <text x="148" y="60" text-anchor="middle" font-size="17" fill="#ffe488">קולות בקלפי</text>
+    <text id="scoreVal" x="148" y="114" text-anchor="middle" font-size="50" fill="#ffffff">0</text>
   </g>
   <g id="musicBtn" class="clickable">
     <ellipse cx="936" cy="62" rx="46" ry="33" fill="#f2d24b" stroke="#1a1a1a" stroke-width="5"/>
     <ellipse cx="928" cy="52" rx="20" ry="10" fill="#fff" opacity=".55"/>
     <path d="M928 78 l0 -30 l22 -6 l0 30" stroke="#1a1a1a" stroke-width="6" fill="none"/>
     <circle cx="922" cy="78" r="8" fill="#1a1a1a"/><circle cx="944" cy="72" r="8" fill="#1a1a1a"/>
-    <rect x="884" y="92" width="104" height="24" rx="12" fill="#1a1a1a" opacity=".82"/>
-    <text id="musicHint" x="936" y="110" text-anchor="middle" font-family="Secular One" font-size="16" fill="#f5ecc9">100</text>
+    <rect x="884" y="88" width="104" height="22" rx="11" fill="#08286a" opacity=".92"/>
+    <text id="musicHint" x="936" y="104" text-anchor="middle" font-size="15" fill="#ffe488">100</text>
   </g>
   <g id="pauseBtn" class="clickable">
     <ellipse cx="936" cy="152" rx="46" ry="33" fill="#f2d24b" stroke="#1a1a1a" stroke-width="5"/>
@@ -822,7 +847,7 @@ function hudArt(){
 
 /* צ'יפ הזמנה אחד: כמה עוד צריך מכל מנה. נבנה מימין לשמאל */
 function orderRowArt(key, remaining, i){
-  const x = 838 - i*144;
+  const x = 812 - i*144;
   const done = remaining<=0;
   const swatch = { soup:"#e8952f", rice:"#f2ead6", patty:"#8a5a2b", salad:"#3f9b2f" }[key];
   return `
@@ -1540,6 +1565,20 @@ function addCustomerEl(cust, slot){
   g.addEventListener("pointerdown", ()=>clickCustomer(cust));
   cust.el = g;
   $("#queueG").appendChild(g);
+  /* עיגון המד, החץ והבועה לראש הדמות עצמה, לא לגובה שרירותי */
+  const pl = href ? charPlaceObj(idx) : null;
+  if(pl){
+    const cx = pl.x + pl.f.cx * pl.w;             /* מרכז הגוף */
+    const headTop = pl.y + pl.f.top * pl.h;       /* קצה הראש */
+    const ms = 0.74, as = 0.55;                   /* מד וחץ מוקטנים */
+    const mty = Math.max(6 - QY, headTop - 8 - 100*ms);
+    const mtx = cx - 16*ms;
+    g.querySelector(".meterG").setAttribute("transform", `translate(${mtx.toFixed(1)} ${mty.toFixed(1)}) scale(${ms})`);
+    const aty = mty - 4*ms - 2 + 4*as;
+    const atx = cx - 130*as;
+    g.querySelector(".frontArrow").setAttribute("transform", `translate(${atx.toFixed(1)} ${aty.toFixed(1)}) scale(${as})`);
+    g.querySelector(".shout").setAttribute("transform", `translate(${(cx-95).toFixed(1)} ${(headTop+4).toFixed(1)})`);
+  }
   g.getBoundingClientRect(); /* reflow, שהמעבר מהדלת יונפש */
   g.style.opacity = 1;
 }
@@ -1598,10 +1637,12 @@ function renderOrderBoard(){
   const rows = FKEYS.filter(k=>front.order[k]>0);
   $("#obRows").innerHTML = rows
     .map((k,i)=>orderRowArt(k, front.order[k]-S.plate[k], i)).join("");
-  /* הרצועה מתכווצת לפי מספר הצ'יפים */
-  const w = Math.max(300, 30 + rows.length*144);
-  const x = 984 - w;
+  /* הרצועה מתכווצת לפי מספר הצ'יפים, והכותרת מעוגנת לתוך הכרטיס */
+  const w = Math.max(300, 34 + rows.length*144);
+  const x = 958 - w;
   board.querySelectorAll("rect").forEach(r=>{ r.setAttribute("x", x); r.setAttribute("width", w); });
+  const title = $("#obTitle");
+  if(title) title.setAttribute("x", x + w - 16);
 }
 
 function renderFlags(){
@@ -1632,14 +1673,23 @@ function renderTray(k){
   }
   const food = g.querySelector(".trayFood");
   if(food) food.style.opacity = S.trays[k]>0 ? Math.max(.3,S.trays[k]/100) : .12;
+  /* דלת המטבח פועמת כשמגש כלשהו מתרוקן */
+  const pulse = $("#workerG .doorPulse");
+  if(pulse){
+    const low = FKEYS.some(kk=>S.trays[kk]<25);
+    pulse.style.display = low ? "" : "none";
+  }
   const had = g.querySelector(".flyG");
   if(S.flies[k] && !had){
+    /* זבוב גדול, במרכז המגש, שאי אפשר לפספס. הוא הסיבה שהקליק לא עובד. */
     const f = document.createElementNS(SVGNS,"g");
     f.setAttribute("class","flyG");
-    f.setAttribute("transform",`translate(${-40+Math.random()*80} ${-10+Math.random()*20})`);
+    f.setAttribute("transform",`translate(${-14+Math.random()*28} 26) scale(2.3)`);
     f.innerHTML = `
+      <circle cx="0" cy="4" r="16" fill="none" stroke="#c9231a" stroke-width="2.5" opacity=".8"/>
       <ellipse cx="0" cy="6" rx="11" ry="7" fill="#22221e" stroke="#111" stroke-width="2"/>
       <circle cx="-9" cy="1" r="5" fill="#111"/>
+      <circle cx="-11" cy="-1" r="1.5" fill="#fff"/>
       <ellipse cx="-6" cy="-6" rx="9" ry="5" fill="rgba(205,225,255,.85)" stroke="#556" stroke-width="1.5" transform="rotate(-16 -6 -6)"/>
       <ellipse cx="8" cy="-7" rx="9" ry="5" fill="rgba(205,225,255,.85)" stroke="#556" stroke-width="1.5" transform="rotate(14 8 -7)"/>`;
     g.appendChild(f);
@@ -1825,7 +1875,8 @@ function tick(dt){
     if(c.patience>=100) return gameOver(c);
     renderCustomer(c);
   }
-  if(Math.random()<dt*0.085*(1+S.level*0.15)){
+  /* זבובים: איטי בהתחלה, מתגבר עם הרמות, ולעולם לא יותר משניים */
+  if(Object.keys(S.flies).length<2 && Math.random()<dt*0.035*(1+S.level*0.25)){
     const k=FKEYS[Math.floor(Math.random()*4)];
     if(!S.flies[k]){ S.flies[k]=true; renderTray(k); }
   }

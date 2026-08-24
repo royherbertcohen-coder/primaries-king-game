@@ -16,7 +16,11 @@
     font-display:swap;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
-  html,body{margin:0;padding:0;background:#181818;height:100%;overflow:hidden;font-family:'Secular One',sans-serif;}
+  html,body{margin:0;padding:0;background:#181818;height:100%;overflow:hidden;font-family:'Likkud','Secular One',sans-serif;}
+  /* פונט הליכוד בכל מקום במשחק, כולל טקסטים בתוך ה-SVG */
+  #gameSvg text, #titleSvg text, #toast, #pauseOverlay, #overCard, #howtoScreen{
+    font-family:'Likkud','Suez One','Secular One',sans-serif !important;
+  }
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
   #stage{position:relative;width:650px;height:490px;background:#66CCFF;border:6px solid #0d0d0d;border-radius:6px;overflow:hidden;transform-origin:center;}
   .scr{position:absolute;inset:0;display:none;}
@@ -566,18 +570,24 @@ async function detectCounterY(src){
     const results = [];
     for(const fx of [0.22, 0.38, 0.5, 0.62, 0.78]){
       const col = Math.round(cv.width*fx);
-      let best = null;
-      for(let y=Math.round(cv.height*0.42); y<cv.height*0.70; y++){
-        const i=((y*cv.width)+col)*4, j=(((y+3)*cv.width)+col)*4;
+      let first = null, best = null;
+      for(let y=Math.round(cv.height*0.42); y<cv.height*0.62; y++){
+        const i=((y*cv.width)+col)*4, j=(((y+5)*cv.width)+col)*4;
         const diff=Math.abs(d[i]-d[j])+Math.abs(d[i+1]-d[j+1])+Math.abs(d[i+2]-d[j+2]);
+        /* הקצה הראשון מלמעלה הוא המעבר קיר-דלפק. הוא זה שמעניין,
+           לא הקצה החזק ביותר (שהוא בדרך כלל קצה המגשים למטה). */
+        if(first===null && diff>90){ first=y; }
         if(!best || diff>best.diff) best={y, diff};
       }
-      if(best && best.diff>80) results.push(best.y);
+      if(first!==null) results.push(first);
+      else if(best && best.diff>70) results.push(best.y);
     }
     if(results.length<3) return null;
     results.sort((a,b)=>a-b);
-    const median = results[Math.floor(results.length/2)];
-    return Math.round(median/cv.height*750);
+    const y750 = Math.round(results[Math.floor(results.length/2)]/cv.height*750);
+    /* טווח שפיות: קו דלפק סביר יושב בין 0.49 ל-0.57 מגובה המסך.
+       מחוץ לזה הזיהוי טעה ועדיף ברירת המחדל המכוילת. */
+    return (y750>=368 && y750<=428) ? y750 : null;
   }catch(e){ return null; }
 }
 
@@ -660,9 +670,7 @@ function applyAssets(){
           <text x="0" y="8" text-anchor="middle" font-family="Secular One" font-size="14" fill="#444">מרק · אורז</text>
           <text x="0" y="28" text-anchor="middle" font-family="Secular One" font-size="14" fill="#444">קציצות · סלט</text>
         </g>
-        <g transform="translate(930 128)">
-          <text x="0" y="0" text-anchor="middle" font-family="Suez One" font-size="24" fill="#7a4a1d">בתיאבון</text>
-        </g>`;
+        `;
       svg.insertBefore(patches, svg.querySelector("#queueG"));
       /* כיסוי דגלוני המספרים הסטטיים שעל הדלפק */
       const covers = document.createElementNS(SVGNS,"g");
@@ -942,14 +950,10 @@ function trayArt(key,x,y,w){
   <g id="tray-${key}" class="clickable" transform="translate(${x} ${y})">
     <g class="paint">${key==="soup"?`<g class="trayFood">${body}</g>`:body}</g>
     <rect class="hit" x="${-w/2}" y="-40" width="${w}" height="${h+48}" fill="#fff" fill-opacity="0.001"/>
-    <!-- שלט המגש: השם וכמה עוד צריך, באותו אלמנט. תמיד מיושר. -->
+    <!-- שלט המגש: השם והכמות הנדרשת בתוך אותו שלט. אין מה שיזוז. -->
     <g class="tlabel" transform="translate(0 ${-30})">
-      <rect x="-62" y="-23" width="124" height="32" rx="11" fill="#2b2b2b" opacity=".88"/>
-      <text class="tname" x="12" y="1" text-anchor="middle" font-family="Secular One" font-size="20" fill="#f5ecc9">${FOODS[key].name}</text>
-      <g class="cntBadge" style="display:none">
-        <circle cx="-42" cy="-7" r="16" fill="#fffdf2" stroke="#1a1a1a" stroke-width="3"/>
-        <text class="fnum" x="-42" y="1" text-anchor="middle" font-family="Suez One" font-size="20" fill="#c9231a">2</text>
-      </g>
+      <rect x="-62" y="-24" width="124" height="34" rx="12" fill="#08286a" stroke="#e8b62c" stroke-width="2.5" opacity=".95"/>
+      <text class="tname" x="0" y="2" text-anchor="middle" font-size="21" fill="#ffe488">${FOODS[key].name}<tspan class="fnum" dx="-6" fill="#fff"></tspan></text>
     </g>
     <!-- מד מלאי דק, במקום אחוזים גדולים על האוכל -->
     <g class="stockBar" transform="translate(0 ${h+4})">
@@ -1598,18 +1602,16 @@ function renderFlags(){
   renderOrderBoard();
   const front = S.queue[0];
   FKEYS.forEach(k=>{
-    const badge = $(`#tray-${k} .cntBadge`);
-    if(!badge) return;
-    if(!front || front.served || front.order[k]===0){ badge.style.display="none"; return; }
-    badge.style.display="";
+    const num = $(`#tray-${k} .fnum`);
+    if(!num) return;
+    if(!front || front.served || front.order[k]===0){ num.textContent=""; return; }
     const remaining = front.order[k] - S.plate[k];
-    const num = badge.querySelector(".fnum");
     if(remaining<=0){
-      num.textContent = "✓";
-      num.setAttribute("fill", "#3f9b1e");
+      num.textContent = " ✓";
+      num.setAttribute("fill", "#7de89a");
     } else {
-      num.textContent = remaining;
-      num.setAttribute("fill", "#c9231a");
+      num.textContent = " · " + remaining;
+      num.setAttribute("fill", "#ffffff");
     }
   });
 }

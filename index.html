@@ -54,10 +54,25 @@
   #titleMenu{position:absolute;bottom:56px;left:0;right:0;z-index:5;}
 
   /* ---------- HOWTO ---------- */
-  #howtoScreen{background:linear-gradient(#0b3a86,#051c4e);padding:22px 34px;}
-  #howtoScreen h2{color:#ffe488;font-size:34px;margin:2px 0 12px;text-align:center;}
-  #howtoScreen ul{margin:0;padding:0 18px 0 0;font-size:16.5px;line-height:1.6;color:#e8eefc;}
+  /* גלילה פנימית, שכפתור החזרה תמיד יהיה בהישג יד גם במסך קטן */
+  #howtoScreen{
+    background:linear-gradient(#0b3a86,#051c4e);padding:16px 26px 12px;
+    flex-direction:column;
+  }
+  #howtoScreen.on{display:flex;}
+  #howtoScreen h2{color:#ffe488;font-size:30px;margin:0 0 8px;text-align:center;flex:0 0 auto;}
+  #howtoScreen ul{
+    margin:0;padding:0 18px 0 0;font-size:15.5px;line-height:1.5;color:#e8eefc;
+    flex:1 1 auto;overflow-y:auto;
+  }
+  /* פס גלילה דק בצבעי הערכה, במקום פס המערכת האפור */
+  #howtoScreen ul{scrollbar-width:thin;scrollbar-color:#e8b62c #08286a;}
+  #howtoScreen ul::-webkit-scrollbar{width:7px;}
+  #howtoScreen ul::-webkit-scrollbar-track{background:#08286a;border-radius:4px;}
+  #howtoScreen ul::-webkit-scrollbar-thumb{background:#e8b62c;border-radius:4px;}
+  #howtoScreen li{margin-bottom:5px;}
   #howtoScreen li b{color:#ffe488;}
+  #howtoScreen .menuBtn{flex:0 0 auto;margin:10px auto 0;}
 
   /* ---------- GAME ---------- */
   #gameScreen{background:#8a9296;}
@@ -108,6 +123,19 @@
   #overCard h2{font-size:40px;color:#ffe488;margin:0 0 6px;}
   #overCard .big{font-size:60px;color:#fff;margin:4px 0;}
   #overCard p{font-size:17px;color:#c9d8f5;margin:6px 0;}
+
+  /* ---------- קרדיט תחתון, מופיע בכל המסכים ---------- */
+  /* z-index גבוה מכל שאר השכבות, אחרת מסך הסיום מכסה אותו */
+  #siteFoot{
+    position:absolute;left:0;right:0;bottom:0;z-index:95;height:17px;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    direction:rtl;font-family:'Secular One',sans-serif;font-size:11px;
+    color:#9fb6da;pointer-events:none;
+    background:linear-gradient(rgba(4,14,38,0),rgba(4,14,38,.78) 50%);
+  }
+  #siteFoot a{color:#ffe488;text-decoration:none;pointer-events:auto;}
+  #siteFoot a:hover{text-decoration:underline;}
+  #siteFoot .sep{opacity:.5;}
 </style>
 </head>
 <body>
@@ -167,10 +195,8 @@
       <text id="hsText" x="325" y="284" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
             font-size="21" fill="#ffe488"></text>
 
-      <!-- פס תחתון -->
-      <rect x="0" y="481" width="650" height="9" fill="url(#t-gold)"/>
-      <text x="325" y="470" text-anchor="middle" font-family="Secular One, sans-serif"
-            font-size="12" fill="#7f9ccb">מחווה לקלאסיקות הפלאש הישראליות של שנות ה-2000</text>
+      <!-- פס תחתון. יושב מעל שורת הקרדיט הגלובלית -->
+      <rect x="0" y="466" width="650" height="6" fill="url(#t-gold)"/>
     </svg>
     <div id="titleMenu">
       <div class="menuBtn" id="btnStart">תאכילו אותי</div>
@@ -217,6 +243,13 @@
       <div class="menuBtn" id="btnAgain">עוד משמרת</div>
       <div class="menuBtn alt" id="btnHome">למסך הפתיחה</div>
     </div>
+  </div>
+
+  <!-- ================= קרדיט ================= -->
+  <div id="siteFoot">
+    <a href="https://www.falafelgame.com/" target="_blank" rel="noopener">מלך הפלאפל המקורי</a>
+    <span class="sep">·</span>
+    <a href="https://theroy.co.il/" target="_blank" rel="noopener">theroy.co.il</a>
   </div>
 
 </div>
@@ -1171,10 +1204,6 @@ function counterArt(){
     <ellipse cx="60" cy="8" rx="40" ry="9" fill="#fff" stroke="#bbb" stroke-width="2"/>
     </g>
     <rect class="hit" x="-4" y="-8" width="128" height="112" fill="#fff" fill-opacity="0.001"/>
-    <g transform="translate(60 -18)">
-      <rect x="-46" y="-22" width="92" height="30" rx="10" fill="#2b2b2b" opacity=".85"/>
-      <text x="0" y="1" text-anchor="middle" font-family="Secular One" font-size="20" fill="#f5ecc9">צלחות</text>
-    </g>
   </g>
   <!-- register -->
   <g class="paint" transform="translate(886 496) rotate(-4)">
@@ -1228,24 +1257,57 @@ function handArt(){
   </g>`;
 }
 
-/* plate mini items */
+/* המנה בצלחת: מנות אמיתיות, לא נקודות צבע */
 function plateItem(key,x,y){
   if(key==="soup") return `<g transform="translate(${x} ${y})">
-    <ellipse cx="0" cy="4" rx="26" ry="10" fill="#c96a1e" stroke="#1a1a1a" stroke-width="3"/>
-    <path d="M-26 4 a26 10 0 0 0 52 0 l-4 12 a22 8 0 0 1 -44 0 Z" fill="#a8541a" stroke="#1a1a1a" stroke-width="3"/>
-    <ellipse cx="0" cy="2" rx="20" ry="7" fill="#f0a044"/>
+    <ellipse cx="0" cy="16" rx="34" ry="9" fill="#00000022"/>
+    <path d="M-30 -2 a30 12 0 0 0 60 0 l-5 15 a25 9 0 0 1 -50 0 Z" fill="#e9e6dd" stroke="#8f8b80" stroke-width="2.5"/>
+    <ellipse cx="0" cy="-2" rx="30" ry="12" fill="#dedbd2" stroke="#8f8b80" stroke-width="2.5"/>
+    <ellipse cx="0" cy="-2" rx="25" ry="9" fill="#e2952c"/>
+    <ellipse cx="-8" cy="-4" rx="9" ry="3" fill="#f2b45c" opacity=".85"/>
+    <circle cx="7" cy="-1" r="2.6" fill="#c96a1e"/><circle cx="-11" cy="1" r="2.2" fill="#c96a1e"/>
+    <circle cx="14" cy="-4" r="2" fill="#7fae3a"/>
+    <path d="M-16 -14 q5 -8 -1 -14 M4 -16 q5 -8 -1 -14" stroke="#fff" stroke-width="2.5" fill="none" opacity=".5"/>
   </g>`;
   if(key==="rice") return `<g transform="translate(${x} ${y})">
-    <path d="M-24 6 Q-16 -10 0 -11 Q16 -10 24 6 Q10 12 0 12 Q-10 12 -24 6" fill="#f6f1e2" stroke="#cabf9c" stroke-width="2.5"/>
-    <ellipse cx="-8" cy="-2" rx="5" ry="2" fill="#fff"/><ellipse cx="6" cy="2" rx="5" ry="2" fill="#fff"/>
+    <ellipse cx="0" cy="12" rx="30" ry="8" fill="#00000018"/>
+    <path d="M-28 10 Q-22 -14 0 -17 Q22 -14 28 10 Q14 16 0 16 Q-14 16 -28 10" fill="#f7f4e9" stroke="#c8c0a6" stroke-width="2.5"/>
+    <g fill="#fffdf5" stroke="#ded6bd" stroke-width="1.2">
+      <ellipse cx="-14" cy="2" rx="5" ry="2.4" transform="rotate(-18 -14 2)"/>
+      <ellipse cx="-2" cy="-6" rx="5" ry="2.4" transform="rotate(12 -2 -6)"/>
+      <ellipse cx="11" cy="1" rx="5" ry="2.4" transform="rotate(-24 11 1)"/>
+      <ellipse cx="3" cy="8" rx="5" ry="2.4" transform="rotate(6 3 8)"/>
+      <ellipse cx="-9" cy="-11" rx="4.4" ry="2.2" transform="rotate(28 -9 -11)"/>
+    </g>
+    <circle cx="6" cy="-11" r="2.4" fill="#4f9b32"/><circle cx="-18" cy="-3" r="2" fill="#4f9b32"/>
   </g>`;
-  if(key==="patty") return `<g transform="translate(${x} ${y})" stroke="#3a2410" stroke-width="2.5">
-    <circle cx="-8" cy="2" r="10" fill="#8a5a2b"/><circle cx="9" cy="-2" r="10" fill="#96652f"/>
-    <ellipse cx="-10" cy="-2" rx="4" ry="2" fill="#c9964e" stroke="none"/>
+  if(key==="patty") return `<g transform="translate(${x} ${y})">
+    <ellipse cx="0" cy="13" rx="28" ry="7" fill="#00000018"/>
+    <g stroke="#4a2c10" stroke-width="2.5">
+      <ellipse cx="-13" cy="2" rx="13" ry="11" fill="#9a6329"/>
+      <ellipse cx="12" cy="-2" rx="13" ry="11" fill="#a86e2e"/>
+      <ellipse cx="0" cy="9" rx="12" ry="10" fill="#8d5a24"/>
+    </g>
+    <g fill="#c99050" opacity=".75">
+      <ellipse cx="-16" cy="-2" rx="5" ry="2.6"/><ellipse cx="9" cy="-6" rx="5" ry="2.6"/>
+      <ellipse cx="-3" cy="5" rx="4.4" ry="2.2"/>
+    </g>
+    <path d="M-24 12 q24 7 48 -2" stroke="#7a2f14" stroke-width="3" fill="none" opacity=".55"/>
   </g>`;
-  return `<g transform="translate(${x} ${y})" stroke="#1e5c12" stroke-width="2">
-    <circle cx="-10" cy="0" r="7" fill="#3f9b2f"/><circle cx="2" cy="-4" r="6" fill="#e33b2a"/>
-    <circle cx="10" cy="3" r="6" fill="#e8d44d"/><circle cx="-2" cy="5" r="5" fill="#3f9b2f"/>
+  return `<g transform="translate(${x} ${y})">
+    <ellipse cx="0" cy="12" rx="29" ry="8" fill="#00000018"/>
+    <g stroke="#245c14" stroke-width="1.8">
+      <circle cx="-16" cy="2" r="7.5" fill="#4aa62f"/>
+      <circle cx="-4" cy="-7" r="7" fill="#d8342a"/>
+      <circle cx="9" cy="1" r="7.5" fill="#5cb838"/>
+      <circle cx="18" cy="-6" r="6" fill="#d8342a"/>
+      <circle cx="-9" cy="10" r="6.5" fill="#4aa62f"/>
+      <circle cx="6" cy="11" r="6" fill="#e8c73f"/>
+      <circle cx="1" cy="1" r="5.5" fill="#7ac94a"/>
+    </g>
+    <g fill="#ffffff" opacity=".45">
+      <ellipse cx="-18" cy="-1" rx="2.6" ry="1.6"/><ellipse cx="7" cy="-2" rx="2.6" ry="1.6"/>
+    </g>
   </g>`;
 }
 
@@ -1266,10 +1328,10 @@ function meterArt(cx){
 
 function bubbleArt(cx){
   return `
-  <g class="shout" transform="translate(${cx-90} ${BUBBLE_Y})" style="display:none">
-    <rect x="0" y="0" width="190" height="42" rx="16" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
-    <path d="M120 40 l12 18 l8 -18" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
-    <text class="shoutTxt" x="95" y="29" text-anchor="middle" font-family="Secular One" font-size="21" fill="#111">נו כבר!</text>
+  <g class="shout" data-cx="${cx}" transform="translate(${cx-90} ${BUBBLE_Y})" style="display:none">
+    <rect class="shoutBox" x="0" y="0" width="190" height="42" rx="16" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+    <path class="shoutTail" d="M120 40 l12 18 l8 -18" fill="#fff" stroke="#1a1a1a" stroke-width="4"/>
+    <text class="shoutTxt" x="95" y="29" text-anchor="middle" font-size="21" fill="#111">נו כבר!</text>
   </g>`;
 }
 
@@ -1727,7 +1789,10 @@ function addCustomerEl(cust, slot){
     g.querySelector(".meterG").setAttribute("transform", `translate(${mtx.toFixed(1)} ${mty.toFixed(1)}) scale(${ms})`);
     const aty = mty - 4*ms - 2 + 4*as;
     const atx = cx - 130*as;
-    g.querySelector(".shout").setAttribute("transform", `translate(${(cx-95).toFixed(1)} ${(headTop+4).toFixed(1)})`);
+    const shEl = g.querySelector(".shout");
+    shEl.dataset.cx = cx.toFixed(1);
+    shEl.dataset.by = (headTop+4).toFixed(1);
+    shEl.setAttribute("transform", `translate(${(cx-95).toFixed(1)} ${(headTop+4).toFixed(1)})`);
   }
   g.getBoundingClientRect(); /* reflow, שהמעבר מהדלת יונפש */
   g.style.opacity = 1;
@@ -1777,9 +1842,21 @@ function renderCustomer(cust){
   if(angry && !cust.served){
     const sh = el.querySelector(".shout");
     if(sh.style.display==="none" && Math.random()<0.018){
-      sh.querySelector(".shoutTxt").textContent =
+      const txt = sh.querySelector(".shoutTxt");
+      txt.textContent =
         ["הסמול אשם","בשביל מה אלוקים","איך הוא שריין את גדעון","זה מתקרר!","נו!"][Math.floor(Math.random()*5)];
       sh.style.display="";
+      /* הבועה מתרחבת לפי אורך המשפט, שהטקסט לא יגלוש החוצה */
+      try{
+        const w = Math.max(120, Math.ceil(txt.getComputedTextLength()) + 34);
+        const box = sh.querySelector(".shoutBox");
+        box.setAttribute("width", w);
+        txt.setAttribute("x", w/2);
+        sh.querySelector(".shoutTail").setAttribute("d", `M${w*0.62} 40 l12 18 l8 -18`);
+        const cx = parseFloat(sh.dataset.cx) || 0;
+        const by = sh.dataset.by !== undefined ? parseFloat(sh.dataset.by) : BUBBLE_Y;
+        sh.setAttribute("transform", `translate(${(cx - w/2).toFixed(1)} ${by})`);
+      }catch(e){}
       setTimeout(()=>{ sh.style.display="none"; },1700);
     }
   }

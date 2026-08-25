@@ -18,7 +18,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
   html,body{margin:0;padding:0;background:#181818;height:100%;overflow:hidden;font-family:'Likkud','Secular One',sans-serif;}
   /* פונט הליכוד בכל מקום במשחק, כולל טקסטים בתוך ה-SVG */
-  #gameSvg text, #titleSvg text, #toast, #pauseOverlay, #overCard, #howtoScreen{
+  #gameSvg text, #titleSvg text, #toast, #pauseOverlay, #overCard{
     font-family:'Likkud','Suez One','Secular One',sans-serif !important;
   }
   /* כל טקסט ב-SVG נשאר בסידור עברי תקין, גם אם מישהו יוסיף ריווח אותיות */
@@ -60,7 +60,9 @@
     flex-direction:column;
   }
   #howtoScreen.on{display:flex;}
-  #howtoScreen h2{color:#ffe488;font-size:30px;margin:0 0 8px;text-align:center;flex:0 0 auto;}
+  /* גוף ההסבר בפונט קריא. פונט הליכוד יפה ככותרת, קשה כטקסט רץ */
+  #howtoScreen{font-family:'Secular One','Arial',sans-serif;}
+  #howtoScreen h2{font-family:'Likkud','Suez One',serif;color:#ffe488;font-size:30px;margin:0 0 8px;text-align:center;flex:0 0 auto;}
   #howtoScreen ul{
     margin:0;padding:0 18px 0 0;font-size:15.5px;line-height:1.5;color:#e8eefc;
     flex:1 1 auto;overflow-y:auto;
@@ -98,9 +100,16 @@
   #toast.on{display:block;}
   #pauseOverlay{
     position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:55;display:none;
+    flex-direction:column;gap:16px;
     align-items:center;justify-content:center;color:#fff;font-family:'Suez One',serif;font-size:52px;
+    cursor:pointer;
   }
   #pauseOverlay.on{display:flex;}
+  /* הרקע מאחורי ההפסקה עמוס, אז הרמז יושב על גלולה כהה משלו */
+  #pauseOverlay .pHint{
+    font-size:15px;color:#cfe0ff;font-family:'Secular One',sans-serif;
+    background:rgba(4,14,38,.85);padding:6px 16px;border-radius:20px;
+  }
   /* מסך טעינה: מסתיר את גרפיקת הגיבוי עד שהתמונות מוכנות */
   #loadCover{
     position:absolute;inset:0;background:linear-gradient(#0b3a86,#051c4e);z-index:70;
@@ -123,6 +132,16 @@
   #overCard h2{font-size:40px;color:#ffe488;margin:0 0 6px;}
   #overCard .big{font-size:60px;color:#fff;margin:4px 0;}
   #overCard p{font-size:17px;color:#c9d8f5;margin:6px 0;}
+
+  /* ---------- טלפון אנכי ---------- */
+  #rotate{
+    position:absolute;inset:0;z-index:200;display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;
+    background:linear-gradient(#0b3a86,#051c4e);color:#ffe488;
+  }
+  #rotate.on{display:flex;}
+  #rotate .ric{display:block;animation:tilt 2s ease-in-out infinite;transform-origin:50% 50%;}
+  @keyframes tilt{0%,45%{transform:rotate(0deg)}75%,100%{transform:rotate(-90deg)}}
 
   /* ---------- קרדיט תחתון, מופיע בכל המסכים ---------- */
   /* z-index גבוה מכל שאר השכבות, אחרת מסך הסיום מכסה אותו */
@@ -227,7 +246,11 @@
   <div class="scr" id="gameScreen">
     <svg id="gameSvg" viewBox="0 0 1000 750"></svg>
     <div id="toast"></div>
-    <div id="pauseOverlay">הפסקה</div>
+    <div id="pauseOverlay">
+      <div>הפסקה</div>
+      <div class="menuBtn" id="btnResume" style="margin:0;width:250px;font-size:24px;">חזרה למשחק</div>
+      <div class="pHint">אפשר גם ללחוץ במקום כלשהו, או על Esc</div>
+    </div>
     <div id="loadCover">
       <div id="loadTitle">פותחים את הסניף</div>
       <div id="loadDots">● ● ●</div>
@@ -244,6 +267,17 @@
       <div class="menuBtn" id="btnAgain">עוד משמרת</div>
       <div class="menuBtn alt" id="btnHome">למסך הפתיחה</div>
     </div>
+  </div>
+
+  <!-- ================= סובב את הטלפון ================= -->
+  <div id="rotate">
+    <svg class="ric" viewBox="0 0 60 100" width="62" height="104" aria-hidden="true">
+      <rect x="6" y="4" width="48" height="92" rx="9" fill="none" stroke="#ffe488" stroke-width="5"/>
+      <rect x="14" y="16" width="32" height="60" rx="3" fill="#ffe488" opacity=".22"/>
+      <circle cx="30" cy="87" r="4.5" fill="#ffe488"/>
+    </svg>
+    <div style="font-size:27px">סובב את הטלפון</div>
+    <div style="font-size:15px;color:#b9cdf0">המשחק בנוי לרוחב, כמו במקור</div>
   </div>
 
   <!-- ================= קרדיט ================= -->
@@ -267,11 +301,22 @@ const $  = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const SVGNS = "http://www.w3.org/2000/svg";
 
+/* קנה מידה אחיד בלבד — יחס המסך של המשחק לא נמתח לעולם */
 function fitStage(){
-  const s = Math.min(window.innerWidth/662, window.innerHeight/502, 1.5);
+  const w = window.innerWidth, h = window.innerHeight;
+  const s = Math.min(w/662, h/502, 1.5);
   $("#stage").style.transform = `scale(${s})`;
+  /* טלפון אנכי: המשחק בנוי לרוחב, אז מבקשים לסובב ומשהים כדי שלא ימות בינתיים */
+  const rot = document.getElementById("rotate");
+  if(rot){
+    const need = h > w && Math.min(w,h) < 560;
+    rot.classList.toggle("on", need);
+    if(need){ try{ if(S && !S.over && !S.paused) togglePause(); }catch(e){} }
+  }
 }
-window.addEventListener("resize", fitStage); fitStage();
+window.addEventListener("resize", fitStage);
+window.addEventListener("orientationchange", ()=>setTimeout(fitStage,150));
+fitStage();
 
 /* ---------- synth sounds ---------- */
 let AC=null;
@@ -392,7 +437,7 @@ const MAX_CHARS = 8;
 /* אפשרות ב': רצועה לכל דמות char{n}-strip.png — 3 תאים (רגוע/עצבני/שמח), רקע שקוף.
    אפשרות ג': גיליון chars-sheet.png — 3 עמודות, שורה לכל דמות, רקע לבן (מוסר אוטומטית).
    שמות הדמויות לפי הסדר: */
-const CHAR_NAMES = ["חנוך מילביצקי","אבי דכטר","עדית סילמן","ניסים ואטורי","מאי גולן","אורח 6","אורח 7","אורח 8"];
+const CHAR_NAMES = ["חנוך מילביצקי","אבי דכטר","עדית סילמן","ניסים ואטורי","גילה גולן / מאי גמליאל","אורח 6","אורח 7","אורח 8"];
 const ASSETS = { loaded:{}, url:{}, charURL:{}, charFit:{}, checked:false };
 /* גובה הגוף הרצוי במשחק. כל דמות מוקטנת או מוגדלת אליו,
    כך שכולן יוצאות באותו גודל גם אם ציירת אותן אחרת. */
@@ -882,8 +927,8 @@ function applyAssets(){
         ds.setAttribute("class","doorSign");
         ds.innerHTML = `
           <rect class="doorPulse" x="-4" y="-4" width="102" height="318" rx="10" fill="none" stroke="#e8b62c" stroke-width="5" style="display:none"/>
-          <g transform="translate(44 42)">
-            <rect x="-52" y="-22" width="104" height="32" rx="9" fill="#08286a" stroke="#e8b62c" stroke-width="2.5"/>
+          <g transform="translate(17 -46)">
+            <rect x="-54" y="-22" width="108" height="34" rx="9" fill="#08286a" stroke="#e8b62c" stroke-width="2.5"/>
             <text x="0" y="2" text-anchor="middle" font-size="17" fill="#ffe488">מטבח · שמעון</text>
           </g>`;
         worker.appendChild(ds);
@@ -901,7 +946,7 @@ function applyAssets(){
       patches.setAttribute("class","assetBg hebPatches");
       /* טקסט עברי על השלטים הריקים שברקע */
       patches.innerHTML = `
-        <g transform="translate(600 44)">
+        <g transform="translate(618 58)">
           <text x="0" y="0" text-anchor="middle" font-size="19" fill="#2a5fa8">גדעון סער זיין אתכם,</text>
           <text x="0" y="24" text-anchor="middle" font-size="19" fill="#2a5fa8">לפחות תאכלו טוב</text>
         </g>
@@ -912,6 +957,14 @@ function applyAssets(){
         </g>
         `;
       svg.insertBefore(patches, svg.querySelector("#queueG"));
+      /* הפתקים הלבנים שברקע היו ריקים. הם הופכים לשלט הכמות הגדול של
+         המנה שבהכנה — הכי בולט שיש, ישר מתחת לכל מגש. */
+      const NEED_CARD = { soup:[72.8,578.1], rice:[268.1,584.0], patty:[471.2,585.0], salad:[670.9,586.4] };
+      const nc = document.createElementNS(SVGNS,"g");
+      nc.setAttribute("id","needCards");
+      nc.innerHTML = FKEYS.map(k=>`<text class="needTxt" data-k="${k}" x="${NEED_CARD[k][0]}" y="${NEED_CARD[k][1]+15}" text-anchor="middle" font-size="44" fill="#c1121f">0</text>`).join("");
+      const handEl = svg.querySelector("#handG");
+      if(handEl) svg.insertBefore(nc, handEl); else svg.appendChild(nc);
       /* כיסוי דגלוני המספרים הסטטיים שעל הדלפק */
       const covers = document.createElementNS(SVGNS,"g");
       covers.setAttribute("class","assetBg");
@@ -1057,7 +1110,7 @@ function hudArt(){
     <rect x="392" y="612" width="592" height="106" rx="12" fill="#fffdf2" stroke="#e8b62c" stroke-width="4"/>
     <rect x="392" y="612" width="592" height="36" rx="12" fill="#08286a"/>
     <rect x="392" y="636" width="592" height="12" fill="#08286a"/>
-    <text id="obTitle" x="688" y="641" text-anchor="middle" font-size="21" fill="#ffe488">ההזמנה</text>
+    <text id="obTitle" x="688" y="642" text-anchor="middle" font-size="23" fill="#ffe488">המנה שצריך להכין עכשיו</text>
     <g id="obRows"></g>
   </g>`;
 }
@@ -1919,7 +1972,7 @@ function renderOrderBoard(){
   const front = activeOrder();
   if(!front || front.served){ board.style.display="none"; return; }
   board.style.display="";
-  $("#obTitle").textContent = "ההזמנה";
+  $("#obTitle").textContent = "המנה שצריך להכין עכשיו";
   const rows = FKEYS.filter(k=>front.order[k]>0);
   $("#obRows").innerHTML = rows
     .map((k,i)=>orderRowArt(k, front.order[k]-S.plate[k], i)).join("");
@@ -1941,8 +1994,22 @@ function activeOrder(){
 }
 function newDish(){ S.currentOrder = makeOrder(); }
 
+/* שלטי הכמות על הפתקים הלבנים */
+function renderNeedCards(){
+  const g = $("#needCards"); if(!g) return;
+  const o = S.currentOrder || {};
+  g.querySelectorAll(".needTxt").forEach(t=>{
+    const k = t.getAttribute("data-k");
+    const want = o[k]||0, rem = want - (S.plate[k]||0);
+    if(!want){        t.textContent="–"; t.setAttribute("fill","#b3aa97"); t.setAttribute("font-size","32"); }
+    else if(rem>0){   t.textContent=rem; t.setAttribute("fill","#c1121f"); t.setAttribute("font-size","46"); }
+    else {            t.textContent="✓"; t.setAttribute("fill","#1e8b2f"); t.setAttribute("font-size","40"); }
+  });
+}
+
 function renderFlags(){
   renderOrderBoard();
+  renderNeedCards();
   /* החץ עוקב אחרי המנה שבהכנה, גם כשהתור מתחלף */
   const front = activeOrder();
   FKEYS.forEach(k=>{
@@ -2267,7 +2334,7 @@ function highScore(){
 
 function gameOver(cust){
   S.over=true; stopBGM(); flyBuzzOff(); sndOver();
-  $("#overReason").textContent=`${cust.cast.name} איבד סבלנות. מי שלא עומד בחום, שיצא מהמטבח.`;
+  $("#overReason").textContent="מי שלא עומד בחום, שיצא מהמטבח.";
   $("#overScore").textContent=S.score;
   let line=`הגשת ${S.meals} מנות חמות במשמרת הזו.`;
   if(S.score>highScore()){
@@ -2308,6 +2375,13 @@ $("#btnHow").addEventListener("pointerdown",()=>show("howtoScreen"));
 $("#btnBack").addEventListener("pointerdown",()=>show("titleScreen"));
 $("#btnAgain").addEventListener("pointerdown",()=>startGame());
 $("#btnHome").addEventListener("pointerdown",()=>show("titleScreen"));
+/* יציאה מהפסקה: כפתור, לחיצה על המסך, או Esc/רווח */
+$("#pauseOverlay").addEventListener("pointerdown",()=>{ if(S && S.paused) togglePause(); });
+window.addEventListener("keydown",e=>{
+  if(e.key!=="Escape" && e.key!==" " && e.key!=="Spacebar") return;
+  if(!S || S.over || !$("#gameScreen").classList.contains("on")) return;
+  e.preventDefault(); togglePause();
+});
 </script>
 </body>
 </html>

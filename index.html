@@ -84,6 +84,16 @@
     align-items:center;justify-content:center;color:#fff;font-family:'Suez One',serif;font-size:52px;
   }
   #pauseOverlay.on{display:flex;}
+  /* מסך טעינה: מסתיר את גרפיקת הגיבוי עד שהתמונות מוכנות */
+  #loadCover{
+    position:absolute;inset:0;background:linear-gradient(#0b3a86,#051c4e);z-index:70;
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    color:#ffe488;
+  }
+  #loadCover.on{display:flex;}
+  #loadTitle{font-size:38px;}
+  #loadDots{font-size:20px;letter-spacing:6px;animation:dotsPulse 1s infinite alternate;}
+  @keyframes dotsPulse{from{opacity:.25;}to{opacity:1;}}
 
   /* ---------- GAME OVER ---------- */
   #overScreen{background:rgba(4,14,38,.92);z-index:80;}
@@ -185,6 +195,10 @@
     <svg id="gameSvg" viewBox="0 0 1000 750"></svg>
     <div id="toast"></div>
     <div id="pauseOverlay">הפסקה</div>
+    <div id="loadCover">
+      <div id="loadTitle">פותחים את הסניף</div>
+      <div id="loadDots">● ● ●</div>
+    </div>
   </div>
 
   <!-- ================= GAME OVER ================= -->
@@ -513,6 +527,20 @@ async function loadStrip(n){
        שגם בהבעה הקצרה ביותר קצה החיתוך יישאר מתחת לדלפק. */
     const bottomMin = Math.min(...boxes.map(b=>b.y+b.h));
     const nb = boxes[0] || box;           /* התא הרגוע: מה שרואים רוב הזמן */
+    /* מאיזה גובה הגוף נוגע בקצות התמונה? משם ומטה יש חתך צדי ישר,
+       והדלפק חייב לכסות אותו. נמדד על כל שלוש ההבעות. */
+    let edgeTouch = ch;
+    cells.forEach(cv=>{
+      try{
+        const dd = cv.getContext("2d").getImageData(0,0,cv.width,cv.height).data;
+        for(let y=0; y<cv.height; y+=2){
+          if(dd[((y*cv.width)+1)*4+3]>40 || dd[((y*cv.width)+cv.width-2)*4+3]>40){
+            if(y<edgeTouch) edgeTouch = y;
+            break;
+          }
+        }
+      }catch(e){}
+    });
     ASSETS.charFit[n] = {
       cw: Math.round(cw), ch: Math.round(ch),
       cx: (nb.x + nb.x + nb.w)/2 / cw,    /* מרכז הגוף בהבעה הרגועה */
@@ -520,6 +548,7 @@ async function loadStrip(n){
       topNeutral: nb.y / ch,              /* קצה הראש בהבעה הרגועה: אליו מעגנים מדים */
       bottom: box.bt / ch,
       bottomMin: bottomMin / ch,          /* התחתית הגבוהה מבין ההבעות */
+      edgeTouch: edgeTouch / ch,          /* תחילת החתך הצדי */
       hFrac: (box.bt - box.y) / ch
     };
   }
@@ -563,7 +592,13 @@ function charPlaceObj(idx){
   const w = f.cw * scale, h = f.ch * scale;
   /* גם ההבעה שמסתיימת הכי גבוה יורדת אל מתחת לקו הדלפק */
   const anchor = (f.bottomMin !== undefined) ? f.bottomMin : f.bottom;
-  const y = (COUNTER_Y + CHAR_SINK) - anchor * h - QY;
+  let y = (COUNTER_Y + CHAR_SINK) - anchor * h - QY;
+  /* כתפיים שנוגעות בקצה התמונה: דוחפים את הדמות מטה עד שהחתך הצדי
+     נבלע מתחת לדלפק. מוגבל, שהראש לא ייקבר. */
+  if(f.edgeTouch !== undefined && f.edgeTouch < 0.999){
+    const yEdge = (COUNTER_Y + 4) - f.edgeTouch * h - QY;
+    if(yEdge > y) y = Math.min(yEdge, y + 80);
+  }
   const x = (CHAR_BOX.w/2) - f.cx * w;
   return {x, y, w, h, f};
 }
@@ -1558,8 +1593,18 @@ function buildGameScreen(){
   svg.querySelector("#pauseBtn").addEventListener("pointerdown", togglePause);
   svg.querySelector("#soundBtn").addEventListener("pointerdown", toggleSound);
   renderHand(); renderHUD(); FKEYS.forEach(renderTray);
-  if(ASSETS.checked) applyAssets();
-  else checkAssets().then(applyAssets);
+  const cover = $("#loadCover");
+  if(ASSETS.checked){
+    applyAssets();
+    if(cover) cover.classList.remove("on");
+  } else {
+    /* עד שהתמונות נטענות ומעובדות, לא מראים את גרפיקת הגיבוי */
+    if(cover) cover.classList.add("on");
+    checkAssets().then(()=>{
+      applyAssets();
+      if(cover) cover.classList.remove("on");
+    });
+  }
 }
 
 function addCustomerEl(cust, slot){

@@ -1795,7 +1795,7 @@ function renderOrderBoard(){
   const front = activeOrder();
   if(!front || front.served){ board.style.display="none"; return; }
   board.style.display="";
-  $("#obTitle").textContent = `ההזמנה של ${front.cast.name}`;
+  $("#obTitle").textContent = "ההזמנה";
   const rows = FKEYS.filter(k=>front.order[k]>0);
   $("#obRows").innerHTML = rows
     .map((k,i)=>orderRowArt(k, front.order[k]-S.plate[k], i)).join("");

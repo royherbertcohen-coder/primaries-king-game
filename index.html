@@ -178,10 +178,11 @@
   <div class="scr" id="howtoScreen">
     <h2>איך משחקים?</h2>
     <ul>
-      <li>במטבח מכינים <b>מנה אחת בכל רגע</b>. מה שצריך לשים בה כתוב ב<b>לוח למטה מימין</b> וכ<b>מספר אדום על השלט של כל מגש</b>.</li>
-      <li>קח צלחת מ<b>ערימת הצלחות</b>, לחץ על המגשים כדי למלא, וכשכל המספרים הפכו ל-V הצלחת מוכנה.</li>
-      <li><b>אתה מחליט למי להגיש אותה.</b> לחץ על כל מצביע בתור. החץ הצהוב מסמן למי היא באמת מתאימה, אבל הבחירה שלך.</li>
-      <li>הגשת למי שלא הזמין את זה? הוא זורק את הצלחת והסבלנות שלו קופצת. תחשוב מי הכי לוחץ.</li>
+      <li>במטבח מכינים <b>מנה אחת בכל רגע</b>. מה צריך לשים בה כתוב על <b>השלט של כל מגש</b> וגם ב<b>לוח למטה מימין</b>.</li>
+      <li>קח צלחת מ<b>ערימת הצלחות</b>, לחץ על המגשים כדי למלא, וכשכל המספרים הפכו ל-V המנה מוכנה.</li>
+      <li>המנה <b>לא שייכת לאף אחד</b>. לחץ על כל מצביע בתור וקבל אותו. <b>אתה מחליט מי מקבל.</b></li>
+      <li>תסתכל על מדי הסבלנות ותחליט מי הכי לוחץ. הגשת מנה שעוד לא מוכנה? הוא מתעצבן.</li>
+      <li>אחרי כל הגשה נכנסת <b>מנה חדשה</b> להכנה.</li>
       <li>המגשים מתרוקנים, תעקוב אחרי הפס הירוק. כשדלת <b>המטבח</b> פועמת בזהב, לחץ עליה ושמעון ימלא.</li>
       <li>נחת <b>זבוב</b> על מגש? המגש נעול עד שתלחץ על הספריי הכחול.</li>
       <li>לכל מצביע יש <b>מד סבלנות</b> מעל הראש. מד שמתמלא עד הסוף = הקמפיין נגמר.</li>
@@ -1622,7 +1623,7 @@ let S=null, loopTimer=null;
 function newState(){
   return {
     score:0, meals:0, level:1,
-    holding:false, plate:{soup:0,rice:0,patty:0,salad:0},
+    holding:false, plate:{soup:0,rice:0,patty:0,salad:0}, currentOrder:null,
     trays:{soup:100,rice:100,patty:100,salad:100},
     flies:{}, queue:[], refilling:false,
     cassetteReady:false, nextCassette:100,
@@ -1658,7 +1659,8 @@ function makeCustomer(){
   if(!avail.length) avail = pool; /* מאגר קטן — מותר כפולים */
   const cast = avail[Math.floor(Math.random()*avail.length)];
   S.seq = (S.seq||0) + 1;
-  return {cast, order:makeOrder(), patience:0, served:false, el:null, spawnSeq:S.seq};
+  /* ללקוח אין הזמנה משלו. הוא פשוט מחכה לאוכל. */
+  return {cast, patience:0, served:false, el:null, spawnSeq:S.seq};
 }
 
 /* =====================================================
@@ -1705,10 +1707,7 @@ function addCustomerEl(cust, slot){
     ? `<g class="body">${charImgArt(idx, href)}</g>`
     : cust.cast.art();
   g.innerHTML = bodyHtml + meterArt(METER_CX) + bubbleArt(METER_CX) +
-    `<g class="frontArrow" style="display:none" transform="translate(0 ${ARROW_DY})">
-       <g class="arrowBob"><path d="M34 -58 L66 -58 L66 -36 L80 -36 L50 -4 L20 -36 L34 -36 Z"
-          fill="#f2d24b" stroke="#1a1a1a" stroke-width="4"/></g>
-     </g>`;
+    `<g class="frontArrow" style="display:none"></g>`;
   g.addEventListener("pointerdown", ()=>clickCustomer(cust));
   cust.el = g;
   $("#queueG").appendChild(g);
@@ -1724,7 +1723,6 @@ function addCustomerEl(cust, slot){
     g.querySelector(".meterG").setAttribute("transform", `translate(${mtx.toFixed(1)} ${mty.toFixed(1)}) scale(${ms})`);
     const aty = mty - 4*ms - 2 + 4*as;
     const atx = cx - 130*as;
-    g.querySelector(".frontArrow").setAttribute("transform", `translate(${atx.toFixed(1)} ${aty.toFixed(1)}) scale(${as})`);
     g.querySelector(".shout").setAttribute("transform", `translate(${(cx-95).toFixed(1)} ${(headTop+4).toFixed(1)})`);
   }
   g.getBoundingClientRect(); /* reflow, שהמעבר מהדלת יונפש */
@@ -1734,8 +1732,7 @@ function addCustomerEl(cust, slot){
 function renderQueue(){
   S.queue.forEach((c,i)=>{
     c.el.style.transform = `translate(${QX[i]}px, ${QY}px) scale(${QSCALE})`;
-    /* החץ מסמן את מי שהצלחת הנוכחית מיועדת לו, בכל מקום בתור */
-    c.el.querySelector(".frontArrow").style.display = (c === activeOrder()) ? "" : "none";
+    /* אין חץ: מסתכלים על מדי הסבלנות ומחליטים לבד, כמו במקור */
   });
   renderFlags();
 }
@@ -1803,24 +1800,17 @@ function renderOrderBoard(){
   if(title) title.setAttribute("x", x + w/2);
 }
 
-/* המנה שבהכנה: המזמין הוותיק ביותר בתור. אין "ראשון בתור" קבוע —
-   הצלחת מוכנה, ואתה מחליט למי היא מתאימה. */
+/* כמו במקור: יש מנה אחת שמכינים עכשיו, והיא לא שייכת לאף אחד.
+   כשהיא מוכנה, מגישים אותה למי שרוצים. */
 function activeOrder(){
-  let best = null;
-  for(const c of S.queue){
-    if(c.served) continue;
-    if(!best || c.spawnSeq < best.spawnSeq) best = c;
-  }
-  return best;
+  if(!S.currentOrder) S.currentOrder = makeOrder();
+  return { order: S.currentOrder, served: false };
 }
+function newDish(){ S.currentOrder = makeOrder(); }
 
 function renderFlags(){
   renderOrderBoard();
   /* החץ עוקב אחרי המנה שבהכנה, גם כשהתור מתחלף */
-  S.queue.forEach(c=>{
-    const a = c.el && c.el.querySelector(".frontArrow");
-    if(a) a.style.display = (c === activeOrder()) ? "" : "none";
-  });
   const front = activeOrder();
   FKEYS.forEach(k=>{
     const num = $(`#tray-${k} .fnum`);
@@ -1977,35 +1967,39 @@ function togglePause(){
   beep(S.paused?300:500,.08,"triangle");
 }
 
-function orderComplete(front){
-  return FKEYS.every(k=>S.plate[k]===front.order[k]);
+/* המנה מוכנה כשהצלחת תואמת לשלטים. היא לא שייכת לאיש. */
+function dishReady(){
+  const o = S.currentOrder || {};
+  return FKEYS.every(k=>S.plate[k]===(o[k]||0));
 }
 
 function clickCustomer(cust){
   if(S.over||S.paused||cust.served) return;
   if(!S.holding){ toast("אין לך צלחת ביד"); sndBad(); return; }
-  if(!orderComplete(cust)){
-    const over = FKEYS.some(k=>S.plate[k]>cust.order[k]);
+  if(!dishReady()){
+    const o = S.currentOrder || {};
+    const over = FKEYS.some(k=>S.plate[k]>(o[k]||0));
     if(over){
-      /* צלחת שגויה: האורח זורק אותה והסבלנות קופצת */
+      /* יותר מדי בצלחת: היא נפסלת ומתחילים מחדש */
       S.holding=false; S.plate={soup:0,rice:0,patty:0,salad:0};
       cust.patience = Math.min(99, cust.patience+12);
-      toast(`${cust.cast.name}: זה לא מה שביקשתי! הצלחת נזרקה`);
+      toast(`${cust.cast.name}: מה שמת פה?! הצלחת נזרקה`);
       renderHand(); renderFlags();
     } else {
       cust.patience = Math.min(99, cust.patience+5);
-      toast("חסר בצלחת. תשלים את ההזמנה");
+      toast("המנה עוד לא מוכנה. תשלים לפי השלטים");
     }
     sndBad();
     renderCustomer(cust);
     return;
   }
-  const items=FKEYS.reduce((s,k)=>s+cust.order[k],0);
+  const items=FKEYS.reduce((s,k)=>s+(S.currentOrder[k]||0),0);
   const bonus=cust.patience<30?10:0;
   const pts=10+items*5+bonus;
   S.score+=pts; S.meals++; S.level=levelOf(S.score);
   S.holding=false; S.plate={soup:0,rice:0,patty:0,salad:0};
   cust.served=true;
+  newDish();   /* מנה חדשה נכנסת להכנה */
   sndServe(); toast(`בתיאבון, ${cust.cast.name}! ‎+${pts}`);
   renderHand(); renderCustomer(cust); renderHUD(); renderFlags();
   if(!S.cassetteReady && S.score>=S.nextCassette){ S.cassetteReady=true; renderHUD(); }

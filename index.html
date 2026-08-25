@@ -178,9 +178,10 @@
   <div class="scr" id="howtoScreen">
     <h2>איך משחקים?</h2>
     <ul>
-      <li>המצביע עם <b>החץ הצהוב</b> מזמין. ההזמנה מופיעה ב<b>לוח למטה מימין</b> וכ<b>מספר אדום על השלט של כל מגש</b>.</li>
-      <li>קח צלחת מ<b>ערימת הצלחות</b>, לחץ על המגשים כדי למלא, וכשכל המספרים הפכו ל-V לחץ על המצביע והגש.</li>
-      <li>זהירות: מנה שלא הוזמנה הורסת את הצלחת. מצביע שמקבל צלחת שגויה זורק אותה, והסבלנות שלו קופצת.</li>
+      <li>במטבח מכינים <b>מנה אחת בכל רגע</b>. מה שצריך לשים בה כתוב ב<b>לוח למטה מימין</b> וכ<b>מספר אדום על השלט של כל מגש</b>.</li>
+      <li>קח צלחת מ<b>ערימת הצלחות</b>, לחץ על המגשים כדי למלא, וכשכל המספרים הפכו ל-V הצלחת מוכנה.</li>
+      <li><b>אתה מחליט למי להגיש אותה.</b> לחץ על כל מצביע בתור. החץ הצהוב מסמן למי היא באמת מתאימה, אבל הבחירה שלך.</li>
+      <li>הגשת למי שלא הזמין את זה? הוא זורק את הצלחת והסבלנות שלו קופצת. תחשוב מי הכי לוחץ.</li>
       <li>המגשים מתרוקנים, תעקוב אחרי הפס הירוק. כשדלת <b>המטבח</b> פועמת בזהב, לחץ עליה ושמעון ימלא.</li>
       <li>נחת <b>זבוב</b> על מגש? המגש נעול עד שתלחץ על הספריי הכחול.</li>
       <li>לכל מצביע יש <b>מד סבלנות</b> מעל הראש. מד שמתמלא עד הסוף = הקמפיין נגמר.</li>
@@ -326,6 +327,34 @@ const CHAR_SINK = 48; /* כמה התחתית נכנסת מתחת לקו הדלפ
 /* עוקף קאש: כל רענון מושך את הקבצים מחדש, שתמונה חדשה תיכנס מיד */
 const CB = "?t=" + Date.now();
 const A = name => "assets/" + name + CB;
+
+/* ---------------------------------------------------------------
+   מסלול מהיר: assets/manifest.json מכיל את שמות הקבצים ואת כל
+   נתוני היישור של הדמויות, מחושבים מראש בסקריפט הבנייה.
+   בלעדיו המשחק נופל חזרה לחיפוש והמדידה בדפדפן (איטי).
+   בניית הקבצים: scratchpad/build_assets.py
+   --------------------------------------------------------------- */
+async function loadManifest(){
+  try{
+    const r = await fetch(A("manifest.json"));
+    if(!r.ok) return false;
+    const m = await r.json();
+    if(!m || !m.chars) return false;
+    if(m.bg) ASSETS.url["bg"] = A(m.bg);
+    if(m.counterY) ASSETS.counterY = m.counterY;
+    const states = ["neutral","angry","happy"];
+    const jobs = Object.entries(m.chars).map(([n, info])=>{
+      ASSETS.charFit[n] = info;
+      const src = A(info.file);
+      /* התאים נחתכים בזמן ההצגה דרך viewBox, בלי לגעת בפיקסלים */
+      states.forEach((s,i)=>{ ASSETS.charURL[`${n}-${s}`] = { src, cell:i, info }; });
+      return tryLoad(src);
+    });
+    await Promise.all(jobs);
+    ASSETS.fromManifest = true;
+    return true;
+  }catch(e){ return false; }
+}
 /* מקבל כל סיומת נפוצה: png / jpg / jpeg / webp. ASSETS.url שומר את מה שנמצא */
 const EXTS = [".png",".jpg",".jpeg",".webp"];
 function tryLoad(src){
@@ -482,11 +511,17 @@ function contentBox(cv){
 }
 
 async function loadStrip(n){
-  /* מקבל כמה שמות: char1-strip, char1-transparent, או char1 בלבד */
+  /* קודם מהרשימה המדויקת, ורק אם אין שם התאמה מחפשים */
   let src = null;
-  for(const base of [`char${n}-strip`, `char${n}-transparent`, `char${n}`]){
-    src = await resolveAsset(base);
+  for(const base of [`char${n}-transparent`, `char${n}-strip`, `char${n}`]){
+    src = knownFile(base);
     if(src) break;
+  }
+  if(!src){
+    for(const base of [`char${n}-transparent`, `char${n}-strip`, `char${n}`]){
+      src = await resolveAsset(base);
+      if(src) break;
+    }
   }
   if(!src) return;
   const im = new Image();
@@ -544,14 +579,24 @@ async function loadStrip(n){
     const nb = boxes[0] || box;           /* התא הרגוע: מה שרואים רוב הזמן */
     /* מאיזה גובה הגוף נוגע בקצות התמונה? משם ומטה יש חתך צדי ישר,
        והדלפק חייב לכסות אותו. נמדד על כל שלוש ההבעות. */
+    /* מאיפה הגוף מתחיל להתרחב לרוחב כמעט מלא? משם ומטה יש חתך ישר
+       של הכתפיים, והדלפק חייב לכסות אותו. נמדד לפי רוחב השורה,
+       לא לפי נגיעה בקצה — כתף רחבה נחתכת גם בלי לגעת ממש בשוליים. */
     let edgeTouch = ch;
     cells.forEach(cv=>{
       try{
-        const dd = cv.getContext("2d").getImageData(0,0,cv.width,cv.height).data;
-        for(let y=0; y<cv.height; y+=2){
-          if(dd[((y*cv.width)+1)*4+3]>40 || dd[((y*cv.width)+cv.width-2)*4+3]>40){
-            if(y<edgeTouch) edgeTouch = y;
-            break;
+        const W = cv.width, H = cv.height;
+        const dd = cv.getContext("2d").getImageData(0,0,W,H).data;
+        let widest = 0;
+        const rowW = y => {
+          let lo=-1, hi=-1;
+          for(let x=0;x<W;x+=2){ if(dd[((y*W)+x)*4+3]>40){ if(lo<0) lo=x; hi=x; } }
+          return hi<0 ? 0 : hi-lo;
+        };
+        for(let y=0; y<H; y+=4){ const r=rowW(y); if(r>widest) widest=r; }
+        if(widest>0){
+          for(let y=0; y<H; y+=4){
+            if(rowW(y) >= widest*0.93){ if(y<edgeTouch) edgeTouch = y; break; }
           }
         }
       }catch(e){}
@@ -611,8 +656,8 @@ function charPlaceObj(idx){
   /* כתפיים שנוגעות בקצה התמונה: דוחפים את הדמות מטה עד שהחתך הצדי
      נבלע מתחת לדלפק. מוגבל, שהראש לא ייקבר. */
   if(f.edgeTouch !== undefined && f.edgeTouch < 0.999){
-    const yEdge = (COUNTER_Y + 4) - f.edgeTouch * h - QY;
-    if(yEdge > y) y = Math.min(yEdge, y + 80);
+    const yEdge = (COUNTER_Y + 10) - f.edgeTouch * h - QY;
+    if(yEdge > y) y = Math.min(yEdge, y + 130);
   }
   const x = (CHAR_BOX.w/2) - f.cx * w;
   return {x, y, w, h, f};
@@ -621,6 +666,23 @@ function charPlacement(idx){
   const p = charPlaceObj(idx);
   if(!p) return `x="${CHAR_BOX.x}" y="0" width="${CHAR_BOX.w}" height="${CHAR_BOX.h}" preserveAspectRatio="xMidYMax meet"`;
   return `x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" width="${p.w.toFixed(1)}" height="${p.h.toFixed(1)}" preserveAspectRatio="none"`;
+}
+
+/* ציור הדמות. במסלול המניפסט התמונה היא רצועה שלמה, והתא הנכון
+   נחשף דרך חלון חיתוך במקום לפרוס אותה לקנבסים. */
+function charImgArt(idx, href){
+  const p = charPlaceObj(idx);
+  if(!p || typeof href !== "object"){
+    return `<image class="charImg" data-idx="${idx}" href="${typeof href==="object"?href.src:href}" ${charPlacement(idx)}/>`;
+  }
+  const cellW = p.w, stripW = cellW * 3;
+  const clipId = "cc" + idx + "-" + Math.random().toString(36).slice(2,7);
+  return `<clipPath id="${clipId}"><rect x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" width="${cellW.toFixed(1)}" height="${p.h.toFixed(1)}"/></clipPath>
+    <g clip-path="url(#${clipId})">
+      <image class="charImg" data-idx="${idx}" data-cellw="${cellW.toFixed(1)}" data-x="${p.x.toFixed(1)}"
+             href="${href.src}" x="${(p.x - href.cell*cellW).toFixed(1)}" y="${p.y.toFixed(1)}"
+             width="${stripW.toFixed(1)}" height="${p.h.toFixed(1)}" preserveAspectRatio="none"/>
+    </g>`;
 }
 
 /* מזהה את קו הדלפק ברקע: הקצה האופקי החזק ביותר ברצועת הגובה הסבירה,
@@ -658,19 +720,33 @@ async function detectCounterY(src){
   }catch(e){ return null; }
 }
 
+/* רשימת הקבצים שבאמת קיימים בתיקייה. בלעדיה הקוד מנחש עשרות שמות
+   וכל ניחוש שגוי הוא בקשת רשת מיותרת שמאטה את הפתיחה. */
+const ASSET_FILES = [
+  "bg.jpg",
+  "char1-transparent.png", "char2-transparent.png", "char3-transparent.png",
+  "char4-transparent.png", "char5-transparent.png"
+];
+function knownFile(base){
+  const hit = ASSET_FILES.find(f => f.slice(0, f.lastIndexOf(".")) === base);
+  return hit ? A(hit) : null;
+}
+
 async function checkAssets(){
   if(ASSETS.checked) return;
-  await resolveAsset("bg");
+  /* מסלול מהיר קודם */
+  if(await loadManifest()){ ASSETS.checked = true; return; }
+  const bg = knownFile("bg");
+  if(bg){ ASSETS.url["bg"] = bg; }
+  else { await resolveAsset("bg"); }
   if(ASSETS.url["bg"]){
     const cy = await detectCounterY(ASSETS.url["bg"]);
     if(cy && cy>300 && cy<560) ASSETS.counterY = cy;
   }
-  /* הדמויות בזוגות: מהיר בהרבה מטור, ובלי להציף את הדפדפן בעשרות בקשות */
-  for(let i=1;i<=MAX_CHARS;i+=2){
-    await Promise.all([loadStrip(i), i+1<=MAX_CHARS ? loadStrip(i+1) : null]);
-    /* דמות שאין לה רצועה? מפסיקים לחפש הלאה, אין עוד קבצים */
-    if(!ASSETS.charURL[`${i}-neutral`]) break;
-  }
+  /* כל הדמויות במקביל: הדפדפן מוריד אותן יחד במקום בתור */
+  const jobs = [];
+  for(let i=1;i<=MAX_CHARS;i++) jobs.push(loadStrip(i));
+  await Promise.all(jobs);
   ASSETS.checked = true;
 }
 function applyAssets(){
@@ -1587,7 +1663,8 @@ function makeCustomer(){
   let avail = pool.filter(c=>!used.includes(c.id));
   if(!avail.length) avail = pool; /* מאגר קטן — מותר כפולים */
   const cast = avail[Math.floor(Math.random()*avail.length)];
-  return {cast, order:makeOrder(), patience:0, served:false, el:null};
+  S.seq = (S.seq||0) + 1;
+  return {cast, order:makeOrder(), patience:0, served:false, el:null, spawnSeq:S.seq};
 }
 
 /* =====================================================
@@ -1631,7 +1708,7 @@ function addCustomerEl(cust, slot){
   const idx = cust.cast.imgIdx || CAST.indexOf(cust.cast)+1;
   const href = charHref(idx,"neutral");
   const bodyHtml = href
-    ? `<g class="body"><image class="charImg" data-idx="${idx}" href="${href}" ${charPlacement(idx)}/></g>`
+    ? `<g class="body">${charImgArt(idx, href)}</g>`
     : cust.cast.art();
   g.innerHTML = bodyHtml + meterArt(METER_CX) + bubbleArt(METER_CX) +
     `<g class="frontArrow" style="display:none" transform="translate(0 ${ARROW_DY})">
@@ -1663,7 +1740,8 @@ function addCustomerEl(cust, slot){
 function renderQueue(){
   S.queue.forEach((c,i)=>{
     c.el.style.transform = `translate(${QX[i]}px, ${QY}px) scale(${QSCALE})`;
-    c.el.querySelector(".frontArrow").style.display = (i===0 && !c.served) ? "" : "none";
+    /* החץ מסמן את מי שהצלחת הנוכחית מיועדת לו, בכל מקום בתור */
+    c.el.querySelector(".frontArrow").style.display = (c === activeOrder()) ? "" : "none";
   });
   renderFlags();
 }
@@ -1678,7 +1756,14 @@ function renderCustomer(cust){
     const idx = charImg.dataset.idx;
     const state = cust.served ? "happy" : angry ? "angry" : "neutral";
     const href = charHrefSafe(idx, state);
-    if(href && charImg.getAttribute("href")!==href) charImg.setAttribute("href", href);
+    if(href && typeof href === "object"){
+      /* רצועה אחת: מחליקים אותה לתא הנכון, בלי טעינה מחדש */
+      const cw = parseFloat(charImg.dataset.cellw), bx = parseFloat(charImg.dataset.x);
+      const nx = (bx - href.cell*cw).toFixed(1);
+      if(charImg.getAttribute("x") !== nx) charImg.setAttribute("x", nx);
+    } else if(href && charImg.getAttribute("href")!==href){
+      charImg.setAttribute("href", href);
+    }
   } else {
     el.querySelector(".m-neutral").style.display = (!angry && !cust.served)? "":"none";
     el.querySelector(".m-angry").style.display   = (angry && !cust.served)? "":"none";
@@ -1707,7 +1792,7 @@ function renderCustomer(cust){
 
 function renderOrderBoard(){
   const board = $("#orderBoard"); if(!board) return;
-  const front = S.queue[0];
+  const front = activeOrder();
   if(!front || front.served){ board.style.display="none"; return; }
   board.style.display="";
   $("#obTitle").textContent = `ההזמנה של ${front.cast.name}`;
@@ -1724,9 +1809,25 @@ function renderOrderBoard(){
   if(title) title.setAttribute("x", x + w/2);
 }
 
+/* המנה שבהכנה: המזמין הוותיק ביותר בתור. אין "ראשון בתור" קבוע —
+   הצלחת מוכנה, ואתה מחליט למי היא מתאימה. */
+function activeOrder(){
+  let best = null;
+  for(const c of S.queue){
+    if(c.served) continue;
+    if(!best || c.spawnSeq < best.spawnSeq) best = c;
+  }
+  return best;
+}
+
 function renderFlags(){
   renderOrderBoard();
-  const front = S.queue[0];
+  /* החץ עוקב אחרי המנה שבהכנה, גם כשהתור מתחלף */
+  S.queue.forEach(c=>{
+    const a = c.el && c.el.querySelector(".frontArrow");
+    if(a) a.style.display = (c === activeOrder()) ? "" : "none";
+  });
+  const front = activeOrder();
   FKEYS.forEach(k=>{
     const num = $(`#tray-${k} .fnum`);
     if(num){
@@ -1838,7 +1939,7 @@ function clickPlate(){
 
 function clickTray(k){
   if(S.over||S.paused) return;
-  const front=S.queue[0];
+  const front=activeOrder();
   if(!S.holding){ toast("קודם קח צלחת!"); sndBad(); return; }
   if(!front || front.served){ toast("אין כרגע הזמנה"); return; }
   if(S.flies[k]){ toast("איכס, זבוב! תרסס קודם"); sndBad(); return; }
@@ -1900,8 +2001,6 @@ function orderComplete(front){
 
 function clickCustomer(cust){
   if(S.over||S.paused||cust.served) return;
-  const idx=S.queue.indexOf(cust);
-  if(idx!==0){ toast(`${cust.cast.name} עוד מחכה בתור`); return; }
   if(!S.holding){ toast("אין לך צלחת ביד"); sndBad(); return; }
   if(!orderComplete(cust)){
     const over = FKEYS.some(k=>S.plate[k]>cust.order[k]);

@@ -459,15 +459,18 @@ async function loadManifest(){
     if(!r.ok) return false;
     const m = await r.json();
     if(!m || !m.chars) return false;
-    if(m.bg) ASSETS.url["bg"] = A(m.bg);
     if(m.counterY) ASSETS.counterY = m.counterY;
     const states = ["neutral","angry","happy"];
-    const jobs = Object.entries(m.chars).map(([n, info])=>{
+    const jobs = [];
+    /* הרקע הוא הקובץ הכבד ביותר. בלי להמתין לו, מסך הטעינה נעלם מוקדם מדי
+       והשחקן רואה במה אפורה עד שהוא נכנס — הבאג של "הגרסה המכוערת בהתחלה". */
+    if(m.bg){ ASSETS.url["bg"] = A(m.bg); jobs.push(tryLoad(ASSETS.url["bg"])); }
+    Object.entries(m.chars).forEach(([n, info])=>{
       ASSETS.charFit[n] = info;
       const src = A(info.file);
       /* התאים נחתכים בזמן ההצגה דרך viewBox, בלי לגעת בפיקסלים */
       states.forEach((s,i)=>{ ASSETS.charURL[`${n}-${s}`] = { src, cell:i, info }; });
-      return tryLoad(src);
+      jobs.push(tryLoad(src));
     });
     await Promise.all(jobs);
     ASSETS.fromManifest = true;

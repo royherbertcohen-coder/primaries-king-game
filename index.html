@@ -21,6 +21,8 @@
   #gameSvg text, #titleSvg text, #toast, #pauseOverlay, #overCard, #howtoScreen{
     font-family:'Likkud','Suez One','Secular One',sans-serif !important;
   }
+  /* כל טקסט ב-SVG נשאר בסידור עברי תקין, גם אם מישהו יוסיף ריווח אותיות */
+  #gameSvg text, #titleSvg text{ direction:rtl; unicode-bidi:plaintext; letter-spacing:normal; }
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
   #stage{
     position:relative;width:650px;height:490px;background:#66CCFF;
@@ -143,10 +145,12 @@
       <rect x="0" y="0" width="650" height="9" fill="url(#t-gold)"/>
 
       <!-- כותרת -->
+      <!-- בלי letter-spacing: הוא שובר את סידור העברית בדפדפני מובייל
+           והכותרת מתהפכת לגמרי -->
       <text x="325" y="150" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
-            font-size="96" fill="#ffffff" letter-spacing="1">מלך הפריימריז</text>
+            font-size="96" fill="#ffffff" direction="rtl">מלך הפריימריז</text>
       <text x="325" y="150" text-anchor="middle" font-family="Likkud, 'Suez One', serif"
-            font-size="96" fill="none" stroke="url(#t-gold)" stroke-width="2.4" letter-spacing="1">מלך הפריימריז</text>
+            font-size="96" fill="none" stroke="url(#t-gold)" stroke-width="2.4" direction="rtl">מלך הפריימריז</text>
 
       <!-- קו זהב מפריד -->
       <g>
